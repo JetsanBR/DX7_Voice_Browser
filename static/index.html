@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yamaha DX7 Voice Browser</title>
+    <!-- Google Fonts: Inter for UI, Orbitron & Share Tech Mono for Retro-LCD displays -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- App Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+
+    <div class="container">
+        <!-- Header & Brand -->
+        <header class="app-header">
+            <div class="brand">
+                <span class="dx7-badge">DX7 / DX7S</span>
+                <h1>YAMAHA <span class="accent-text">VOICE BROWSER</span></h1>
+                <p class="subtitle">MIDI System Exclusive (SysEx) Bank Librarian & Locator</p>
+            </div>
+            
+            <!-- Virtual Retro LCD Display Panel -->
+            <div class="lcd-panel">
+                <div class="lcd-scanlines"></div>
+                <div class="lcd-grid">
+                    <div class="lcd-row">
+                        <span class="lcd-label">SYS STATUS:</span>
+                        <span class="lcd-value status-idle" id="lcd-status">READY</span>
+                    </div>
+                    <div class="lcd-row">
+                        <span class="lcd-label">TOTAL VOICES:</span>
+                        <span class="lcd-value" id="lcd-total-voices">000000</span>
+                    </div>
+                    <div class="lcd-row">
+                        <span class="lcd-label">ACTIVE FILE:</span>
+                        <span class="lcd-value scroll-text" id="lcd-active-file">NONE</span>
+                    </div>
+                    <div class="lcd-row">
+                        <span class="lcd-label">PROGRESS:</span>
+                        <span class="lcd-value" id="lcd-progress">0% [------]</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Command Deck: Scan & Controls -->
+        <section class="command-deck card">
+            <div class="deck-title">
+                <i class="fa-solid fa-square-poll-horizontal"></i>
+                <h2>LIBRARIAN CONTROL PANEL</h2>
+            </div>
+            
+            <div class="scan-form">
+                <div class="input-group">
+                    <label for="dir-input">Target Scan Directory (Absolute Windows Path)</label>
+                    <div class="input-with-button">
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-folder-open input-icon"></i>
+                            <input type="text" id="dir-input" placeholder="e.g., C:\Users\sandr\Music\DX7_Patches" spellcheck="false">
+                        </div>
+                        <button id="scan-btn" class="btn btn-primary">
+                            <span id="scan-btn-text"><i class="fa-solid fa-radar"></i> SCAN</span>
+                            <span id="scan-spinner" class="spinner hidden"></span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="deck-actions">
+                    <button id="clear-btn" class="btn btn-danger">
+                        <i class="fa-regular fa-trash-can"></i> CLEAR DATABASE
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Scanning Progress Bar -->
+            <div id="progress-container" class="progress-container hidden">
+                <div class="progress-info">
+                    <span id="progress-filename">Reading file: </span>
+                    <span id="progress-ratio">0 / 0 files</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Voice Search & Explorer Dashboard -->
+        <main class="voice-explorer card">
+            <div class="explorer-header">
+                <div class="explorer-title">
+                    <i class="fa-solid fa-wave-square"></i>
+                    <h2>PATCH EXPLORER</h2>
+                </div>
+                
+                <!-- Search & Filters -->
+                <div class="filters">
+                    <div class="search-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Type voice name to filter dynamically..." autocomplete="off">
+                        <button id="clear-search-btn" class="clear-search-btn"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice List Results -->
+            <div class="voices-container">
+                <div id="loading-state" class="loading-state hidden">
+                    <div class="retro-loader"></div>
+                    <p>Loading database patches...</p>
+                </div>
+                
+                <div id="empty-state" class="empty-state">
+                    <i class="fa-solid fa-compact-disc empty-icon"></i>
+                    <h3>No voices found in database</h3>
+                    <p>Enter a target directory above and run a SCAN to catalog your Yamaha .syx files.</p>
+                </div>
+
+                <div id="result-counter" class="result-counter hidden"></div>
+
+                <div class="table-scroll-wrapper">
+                    <table class="voices-table hidden" id="voices-table">
+                        <thead>
+                            <tr>
+                                <th class="col-name" data-sort="name">Voice Name <i class="fa-solid fa-sort"></i></th>
+                                <th class="col-pos" data-sort="pos">Pos <i class="fa-solid fa-sort"></i></th>
+                                <th class="col-file" data-sort="file">Sysex File <i class="fa-solid fa-sort"></i></th>
+                                <th class="col-path">Folder Path</th>
+                                <th class="col-files" data-sort="files">Files <i class="fa-solid fa-sort"></i></th>
+                                <th class="col-actions">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="voices-tbody">
+                            <!-- Voices dynamically populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Duplicate Files Modal -->
+    <div id="files-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <div class="modal-title-row">
+                    <i class="fa-solid fa-copy"></i>
+                    <h2 id="modal-title">DUPLICATE FILES</h2>
+                </div>
+                <div id="modal-voice-name" class="modal-voice-name"></div>
+            </div>
+            <div class="modal-body">
+                <div id="modal-loading" class="modal-loading hidden">
+                    <div class="retro-loader"></div>
+                    <p>Loading files...</p>
+                </div>
+                <div id="modal-list" class="modal-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-close-btn" class="btn btn-primary">
+                    <i class="fa-solid fa-xmark"></i> CLOSE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <i id="toast-icon" class="fa-solid fa-circle-info"></i>
+        <span id="toast-message">Message goes here</span>
+    </div>
+
+    <!-- Script inclusion -->
+    <script src="app.js"></script>
+</body>
+</html>

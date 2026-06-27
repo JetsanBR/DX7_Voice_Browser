@@ -1,0 +1,10 @@
+# Database (auto-generated on first run, should not be committed)
+voices.db
+
+# Python virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
