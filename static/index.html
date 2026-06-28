@@ -91,8 +91,18 @@
             </div>
         </section>
 
+        <!-- Section Tab Bar -->
+        <div class="tab-bar" role="tablist">
+            <button class="tab-btn active" id="tab-explorer" role="tab" aria-selected="true" aria-controls="section-explorer">
+                <i class="fa-solid fa-wave-square"></i> PATCH EXPLORER
+            </button>
+            <button class="tab-btn" id="tab-cleanup" role="tab" aria-selected="false" aria-controls="section-cleanup">
+                <i class="fa-solid fa-broom"></i> CLEANUP
+            </button>
+        </div>
+
         <!-- Voice Search & Explorer Dashboard -->
-        <main class="voice-explorer card">
+        <main class="voice-explorer card" id="section-explorer" role="tabpanel">
             <div class="explorer-header">
                 <div class="explorer-title">
                     <i class="fa-solid fa-wave-square"></i>
@@ -143,6 +153,39 @@
                 </div>
             </div>
         </main>
+
+        <!-- Cleanup Section -->
+    <section class="cleanup-section card hidden" id="section-cleanup" role="tabpanel">
+        <div class="cleanup-header">
+            <div class="explorer-title">
+                <i class="fa-solid fa-broom"></i>
+                <h2>DUPLICATE FOLDER CLEANUP</h2>
+            </div>
+            <button id="find-duplicates-btn" class="btn btn-primary">
+                <span id="find-dup-btn-text"><i class="fa-solid fa-magnifying-glass"></i> FIND DUPLICATES</span>
+                <span id="find-dup-spinner" class="spinner hidden"></span>
+            </button>
+        </div>
+
+        <div id="dup-loading" class="loading-state hidden">
+            <div class="retro-loader"></div>
+            <p>Analyzing folder fingerprints...</p>
+        </div>
+
+        <div id="dup-empty" class="empty-state hidden">
+            <i class="fa-solid fa-circle-check empty-icon" style="color: hsl(150,100%,40%)"></i>
+            <h3>No duplicate folders found</h3>
+            <p>All scanned folders contain unique sets of .syx files.</p>
+        </div>
+
+        <div id="dup-initial" class="empty-state">
+            <i class="fa-solid fa-broom empty-icon"></i>
+            <h3>Find Duplicate Folders</h3>
+            <p>Click FIND DUPLICATES to identify folders with identical .syx file sets.</p>
+        </div>
+
+        <div id="dup-groups-container" class="dup-groups-container"></div>
+    </section>
     </div>
 
     <!-- Duplicate Files Modal -->

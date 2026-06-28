@@ -92,6 +92,10 @@ Then open your browser to: **http://127.0.0.1:8000**
 6. **View duplicate files** — Click the teal Files badge on any row to open the **Duplicate Files** panel, which lists every file that contains that voice, with its bank position and folder path. Each entry has a Reveal button.
 7. **Reveal in Explorer** — Click the folder icon on a main row (reveals the representative file) or inside the duplicate panel (reveals the specific file) to open Windows Explorer with that `.syx` file highlighted.
 8. **Clear Database** — Removes all entries. The next scan starts fresh.
+9. **Cleanup tab** — Click the **CLEANUP** tab to switch to the duplicate folder cleanup view. No rescan is needed — the analysis works from whatever is already in the database.
+10. **Find duplicate folders** — Click **FIND DUPLICATES** to analyze the database and identify folders with identical `.syx` content (same filenames and same 32 voices at the same positions).
+11. **Choose which folder to keep** — Each duplicate group shows all matching folders. Select the one to keep using the radio button; the others are marked DEL.
+12. **Delete duplicates** — Click **DELETE UNSELECTED** on a group to permanently delete the unselected folder(s) and all their contents from disk. A confirmation dialog lists exactly what will be removed. This action is irreversible.
 
 ---
 
@@ -246,6 +250,60 @@ Results are sorted by `file_name ASC, position ASC`. No row limit applies.
 
 ---
 
+### `GET /api/duplicates`
+
+Analyzes the database and returns groups of folders with identical `.syx` content sets. Two folders are considered duplicates when they contain exactly the same filenames and each file has the same 32 voices in the same positions.
+
+**Response:**
+```json
+[
+  {
+    "fingerprint": "a3f9c2...",
+    "folders": [
+      {
+        "folder_path": "C:\\Music\\DX7\\ROM",
+        "file_count": 3,
+        "example_file_path": "C:\\Music\\DX7\\ROM\\ROM1A.syx"
+      },
+      {
+        "folder_path": "C:\\Backup\\DX7\\ROM",
+        "file_count": 3,
+        "example_file_path": "C:\\Backup\\DX7\\ROM\\ROM1A.syx"
+      }
+    ]
+  }
+]
+```
+
+Only groups with 2 or more folders are returned. An empty array means no duplicates were found.
+
+---
+
+### `POST /api/delete-folder`
+
+Permanently deletes the entire directory tree for a given folder from disk and removes all matching records from the database.
+
+**Request body:**
+```json
+{ "folder_path": "C:\\Backup\\DX7\\ROM" }
+```
+
+**Response:**
+```json
+{
+  "deleted_path": "C:\\Backup\\DX7\\ROM",
+  "had_indexed_subfolders": false,
+  "error": null
+}
+```
+
+- `had_indexed_subfolders`: `true` if the deleted folder contained subdirectories that were also indexed in the database (their records are removed too).
+- `error`: `null` on success; an error message string if the filesystem deletion failed.
+
+> ⚠️ **Irreversible**: Uses `shutil.rmtree` — the entire folder and all its contents are permanently deleted from disk.
+
+---
+
 ### `POST /api/clear`
 Delete all records from the database.
 
@@ -290,6 +348,11 @@ The index makes `LIKE '%term%'` searches fast even with tens of thousands of row
 
 **Result limit:** `database.RESULT_LIMIT = 200` — module-level constant controlling the maximum rows returned per query. Increase it if a higher browse limit is needed.
 
+**Duplicate detection functions:**
+
+- `get_duplicate_folder_groups()` — Computes a SHA-256 fingerprint for each folder (based on filenames + voice content) and returns groups of folders that share the same fingerprint. Uses `_compute_file_fingerprint()` (per-file hash from voice names and positions) and `_compute_folder_fingerprint()` (hash of all file fingerprints sorted by filename).
+- `delete_folder(folder_path)` — Removes all database records for the given folder (and any indexed subdirectories), then deletes the directory tree from disk using `shutil.rmtree`.
+
 > The database is **cleared and repopulated on each scan** — it is not incremental/additive.
 
 ---
@@ -300,7 +363,10 @@ The index makes `LIKE '%term%'` searches fast even with tens of thousands of row
 Single-page HTML shell. No build step required. Sections:
 - **Header** — Brand title + retro LCD status panel
 - **Command Deck** — Directory input, SCAN button, progress bar, CLEAR DATABASE button
+- **Tab Bar** — Toggles between PATCH EXPLORER and CLEANUP sections
 - **Patch Explorer** — Search input + sortable results table + empty/loading states
+- **Cleanup** — Duplicate folder analysis: FIND DUPLICATES button, group cards with per-group DELETE UNSELECTED
+- **Duplicate Files Modal** — Overlay listing all files that share a voice name
 - **Toast** — Fixed-position notification overlay
 
 ### `app.js`
@@ -312,6 +378,11 @@ Plain ES2020 JavaScript. Key responsibilities:
 - **`sortAndRender()`** — Sorts the current server-returned page client-side and renders (replaced the old `applyFilterAndRender`)
 - **`renderVoicesTable()`** — DOM-builds `<tr>` rows; updates the result counter ("Showing X of Y" when capped)
 - **`revealInExplorer()`** — POSTs to `/api/reveal`
+- **`switchTab(tab)`** — Toggles visibility between PATCH EXPLORER and CLEANUP sections
+- **`loadDuplicates()`** — Fetches `/api/duplicates` and renders results or empty state
+- **`renderDuplicateGroups(groups)`** — Builds group cards with radio buttons and per-group delete button
+- **`updateGroupRowStates(folderList)`** — Updates KEEP/DEL labels and row styling when a radio changes
+- **`handleDeleteGroup(groupEl)`** — Confirms, POSTs `/api/delete-folder` for each unselected row, reloads
 - **`showToast()`** — Auto-dismissing notification (4 s)
 
 **State variables:**
@@ -370,6 +441,8 @@ Expected output: 96 voices across 3 banks at varying directory depths.
 - No authentication — intended for local single-user use only.
 - The `bank_index` field returned by `parser.parse_syx_file()` is **not stored** in the database (only `position` within a bank is stored). If multiple banks exist in one file, voices from all banks are flattened with positions 1–32 repeated per bank.
 - Search results are **capped at 200 rows** (`database.RESULT_LIMIT`). Column sorting applies only to the returned page, not the full dataset. Increase the constant if a higher browse limit is needed.
+- **Folder deletion is irreversible** — the Cleanup tab uses `shutil.rmtree`, which permanently removes the entire directory and all its contents. There is no recycle bin or undo.
+- Duplicate folder detection is based solely on **data in the current database**. If files have been added, moved, or deleted on disk since the last scan, re-scan before running Cleanup to get accurate results.
 
 ---
 

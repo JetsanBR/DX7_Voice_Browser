@@ -2,6 +2,7 @@ import os
 import subprocess
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
@@ -40,6 +41,9 @@ class ScanRequest(BaseModel):
 
 class RevealRequest(BaseModel):
     file_path: str
+
+class DeleteFolderRequest(BaseModel):
+    folder_path: str
 
 def run_background_scan(directory_path: str):
     global scan_state
@@ -141,6 +145,34 @@ def get_voices_files(name: str):
     try:
         files = database.get_voices_by_name(name)
         return files
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/duplicates")
+def get_duplicates():
+    """
+    Analyzes the database and returns groups of folders with identical .syx content.
+    Only groups with >= 2 folders are returned.
+    """
+    try:
+        return database.get_duplicate_folder_groups()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/delete-folder")
+def delete_folder_endpoint(request: DeleteFolderRequest):
+    """
+    Deletes the entire directory tree for folder_path from disk and removes
+    all matching records from the database.
+    Body: { "folder_path": "C:\\..." }
+    """
+    folder_path = request.folder_path.strip()
+    if not folder_path:
+        raise HTTPException(status_code=400, detail="folder_path is required.")
+    try:
+        result = database.delete_folder(folder_path)
+        status_code = 500 if result['error'] else 200
+        return JSONResponse(content=result, status_code=status_code)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,5 +1,8 @@
 import sqlite3
 import os
+import hashlib
+import json
+import shutil
 
 DB_FILE = "voices.db"
 
@@ -139,3 +142,156 @@ def get_voices_by_name(voice_name: str):
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+# ---------------------------------------------------------------------------
+# Cleanup: duplicate folder detection
+# ---------------------------------------------------------------------------
+
+def _compute_file_fingerprint(voice_rows):
+    """
+    Fingerprints a single .syx file from its voice rows (ordered by id ASC).
+    Reconstructs banks by detecting when position resets to 1.
+    """
+    banks, current = [], []
+    for row in voice_rows:
+        if row['position'] == 1 and current:
+            banks.append(current)
+            current = []
+        current.append((row['position'], row['voice_name']))
+    if current:
+        banks.append(current)
+    normalized = [sorted(bank) for bank in banks]
+    return hashlib.sha256(
+        json.dumps(normalized, separators=(',', ':'), ensure_ascii=True).encode()
+    ).hexdigest()
+
+
+def _compute_folder_fingerprint(file_fp_map):
+    """
+    Fingerprints a folder from a {file_name -> file_hex} map.
+    Sorting by filename ensures scan order doesn't affect the result.
+    """
+    return hashlib.sha256(
+        json.dumps(sorted(file_fp_map.items()), separators=(',', ':'), ensure_ascii=True).encode()
+    ).hexdigest()
+
+
+def get_duplicate_folder_groups():
+    """
+    Identifies folders whose .syx file sets are content-identical.
+    Two folders are duplicates when they contain exactly the same filenames
+    with exactly the same voices at the same positions.
+
+    Returns a list of groups, each with >= 2 folders:
+    [
+      {
+        "fingerprint": "<sha256>",
+        "folders": [
+          { "folder_path": str, "file_count": int, "example_file_path": str },
+          ...
+        ]
+      },
+      ...
+    ]
+    Groups are sorted by folder count descending.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT folder_path, file_name, file_path, position, voice_name
+        FROM voices
+        ORDER BY folder_path ASC, file_path ASC, id ASC
+    """)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    if not rows:
+        return []
+
+    # Build: folder_path -> file_path -> { file_name, rows[] }
+    folders_data = {}
+    for row in rows:
+        fp = row['folder_path']
+        fpath = row['file_path']
+        folders_data.setdefault(fp, {})
+        if fpath not in folders_data[fp]:
+            folders_data[fp][fpath] = {'file_name': row['file_name'], 'rows': []}
+        folders_data[fp][fpath]['rows'].append(
+            {'position': row['position'], 'voice_name': row['voice_name']}
+        )
+
+    # Compute per-folder fingerprints
+    folder_fp = {}
+    folder_meta = {}
+    for folder_path, files in folders_data.items():
+        file_fp_map = {}
+        example = None
+        for file_path, fdata in files.items():
+            if example is None:
+                example = file_path
+            file_fp_map[fdata['file_name']] = _compute_file_fingerprint(fdata['rows'])
+        folder_fp[folder_path] = _compute_folder_fingerprint(file_fp_map)
+        folder_meta[folder_path] = {'file_count': len(files), 'example_file_path': example}
+
+    # Group folders by fingerprint, keep only groups with >= 2 folders
+    groups = {}
+    for folder_path, fp in folder_fp.items():
+        groups.setdefault(fp, []).append(folder_path)
+
+    result = []
+    for fingerprint, paths in groups.items():
+        if len(paths) < 2:
+            continue
+        result.append({
+            'fingerprint': fingerprint,
+            'folders': [
+                {
+                    'folder_path': p,
+                    'file_count': folder_meta[p]['file_count'],
+                    'example_file_path': folder_meta[p]['example_file_path'],
+                }
+                for p in sorted(paths)
+            ]
+        })
+    result.sort(key=lambda g: len(g['folders']), reverse=True)
+    return result
+
+
+def delete_folder(folder_path: str):
+    """
+    Removes all DB records for folder_path (and any indexed subfolders),
+    then deletes the entire directory tree from disk via shutil.rmtree.
+
+    Returns:
+    {
+        "deleted_path": str,
+        "had_indexed_subfolders": bool,
+        "error": str | None
+    }
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Check if any indexed subfolder lives inside this directory
+    cursor.execute(
+        "SELECT COUNT(DISTINCT folder_path) FROM voices WHERE folder_path LIKE ?",
+        (folder_path + os.sep + '%',)
+    )
+    had_subfolders = cursor.fetchone()[0] > 0
+
+    # Remove DB records for this folder and any subfolders
+    cursor.execute(
+        "DELETE FROM voices WHERE folder_path = ? OR folder_path LIKE ?",
+        (folder_path, folder_path + os.sep + '%')
+    )
+    conn.commit()
+    conn.close()
+
+    # Delete the directory tree from disk
+    try:
+        if os.path.exists(folder_path):
+            shutil.rmtree(folder_path)
+        return {'deleted_path': folder_path, 'had_indexed_subfolders': had_subfolders, 'error': None}
+    except Exception as e:
+        return {'deleted_path': folder_path, 'had_indexed_subfolders': had_subfolders, 'error': str(e)}

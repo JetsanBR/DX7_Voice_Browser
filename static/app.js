@@ -36,6 +36,19 @@ const toastIcon = document.getElementById('toast-icon');
 const toastMessage = document.getElementById('toast-message');
 const resultCounter = document.getElementById('result-counter');
 
+// Cleanup Tab Elements
+const tabExplorer = document.getElementById('tab-explorer');
+const tabCleanup = document.getElementById('tab-cleanup');
+const sectionExplorer = document.getElementById('section-explorer');
+const sectionCleanup = document.getElementById('section-cleanup');
+const findDuplicatesBtn = document.getElementById('find-duplicates-btn');
+const findDupBtnText = document.getElementById('find-dup-btn-text');
+const findDupSpinner = document.getElementById('find-dup-spinner');
+const dupLoading = document.getElementById('dup-loading');
+const dupEmpty = document.getElementById('dup-empty');
+const dupInitial = document.getElementById('dup-initial');
+const dupGroupsContainer = document.getElementById('dup-groups-container');
+
 // Modal Elements
 const filesModalOverlay = document.getElementById('files-modal-overlay');
 const modalVoiceName = document.getElementById('modal-voice-name');
@@ -69,6 +82,13 @@ function setupEventListeners() {
             handleSort(sortKey);
         });
     });
+
+    // Tab switching
+    tabExplorer.addEventListener('click', () => switchTab('explorer'));
+    tabCleanup.addEventListener('click', () => switchTab('cleanup'));
+
+    // Cleanup actions
+    findDuplicatesBtn.addEventListener('click', loadDuplicates);
 
     // Modal close
     modalCloseBtn.addEventListener('click', closeFilesModal);
@@ -524,6 +544,180 @@ function updateProgressBar(state) {
         progressFilename.textContent = `Scanning: ${state.current_file || 'indexing...'}`;
         progressRatio.textContent = `${state.files_scanned} / ${state.total_files} files`;
     }
+}
+
+// -----------------------------------------------------------------------
+// Tab Switching
+// -----------------------------------------------------------------------
+
+function switchTab(tab) {
+    const toExplorer = tab === 'explorer';
+    tabExplorer.classList.toggle('active', toExplorer);
+    tabCleanup.classList.toggle('active', !toExplorer);
+    tabExplorer.setAttribute('aria-selected', String(toExplorer));
+    tabCleanup.setAttribute('aria-selected', String(!toExplorer));
+    sectionExplorer.classList.toggle('hidden', !toExplorer);
+    sectionCleanup.classList.toggle('hidden', toExplorer);
+}
+
+// -----------------------------------------------------------------------
+// Cleanup: Duplicate Folder Detection & Deletion
+// -----------------------------------------------------------------------
+
+async function loadDuplicates() {
+    dupGroupsContainer.innerHTML = '';
+    dupEmpty.classList.add('hidden');
+    dupInitial.classList.add('hidden');
+    dupLoading.classList.remove('hidden');
+    findDuplicatesBtn.disabled = true;
+    findDupBtnText.classList.add('hidden');
+    findDupSpinner.classList.remove('hidden');
+
+    try {
+        const res = await fetch('/api/duplicates');
+        if (!res.ok) throw new Error((await res.json()).detail || 'Failed to load duplicates.');
+        const groups = await res.json();
+        dupLoading.classList.add('hidden');
+
+        if (groups.length === 0) {
+            dupEmpty.classList.remove('hidden');
+        } else {
+            renderDuplicateGroups(groups);
+        }
+    } catch (e) {
+        dupLoading.classList.add('hidden');
+        dupInitial.classList.remove('hidden');
+        showToast(e.message, 'error');
+    } finally {
+        findDuplicatesBtn.disabled = false;
+        findDupBtnText.classList.remove('hidden');
+        findDupSpinner.classList.add('hidden');
+    }
+}
+
+function renderDuplicateGroups(groups) {
+    dupGroupsContainer.innerHTML = '';
+    groups.forEach(group => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'dup-group';
+        groupEl.dataset.fingerprint = group.fingerprint;
+
+        const fileCount = group.folders[0].file_count;
+        groupEl.innerHTML = `
+            <div class="dup-group-header">
+                <span class="dup-group-badge">
+                    <i class="fa-solid fa-copy"></i>
+                    ${group.folders.length} folders &mdash; identical content
+                </span>
+                <span class="dup-file-count-label">
+                    <i class="fa-solid fa-file-audio"></i>
+                    ${fileCount} file${fileCount !== 1 ? 's' : ''} each
+                </span>
+            </div>
+            <div class="dup-folder-list"></div>
+            <div class="dup-group-footer">
+                <button class="btn btn-danger dup-delete-btn">
+                    <i class="fa-solid fa-trash-can"></i> DELETE UNSELECTED
+                </button>
+            </div>
+        `;
+
+        const folderList = groupEl.querySelector('.dup-folder-list');
+        group.folders.forEach((folder, idx) => {
+            const row = document.createElement('div');
+            row.className = 'dup-folder-row ' + (idx === 0 ? 'dup-row-keep' : 'dup-row-will-delete');
+            row.dataset.folderPath = folder.folder_path;
+
+            const radioName = `keep-${group.fingerprint}`;
+            const radioId = `radio-${group.fingerprint}-${idx}`;
+
+            row.innerHTML = `
+                <label class="dup-radio-label" for="${radioId}">
+                    <input type="radio" id="${radioId}" name="${radioName}"
+                           value="${folder.folder_path}" ${idx === 0 ? 'checked' : ''}>
+                    <span class="dup-radio-indicator"><i class="fa-solid fa-check"></i></span>
+                    <span class="dup-keep-label">${idx === 0 ? 'KEEP' : 'DEL'}</span>
+                </label>
+                <div class="dup-folder-info">
+                    <span class="dup-folder-path" title="${folder.folder_path}">${folder.folder_path}</span>
+                    <span class="dup-folder-meta">${folder.file_count} file${folder.file_count !== 1 ? 's' : ''}</span>
+                </div>
+                <button class="btn-reveal dup-reveal-btn" title="Reveal in Explorer">
+                    <i class="fa-regular fa-folder-open"></i>
+                </button>
+            `;
+
+            row.querySelector('input[type="radio"]').addEventListener('change', () =>
+                updateGroupRowStates(folderList)
+            );
+            row.querySelector('.dup-reveal-btn').addEventListener('click', () =>
+                revealInExplorer(folder.example_file_path)
+            );
+            folderList.appendChild(row);
+        });
+
+        groupEl.querySelector('.dup-delete-btn').addEventListener('click', () =>
+            handleDeleteGroup(groupEl)
+        );
+        dupGroupsContainer.appendChild(groupEl);
+    });
+}
+
+function updateGroupRowStates(folderList) {
+    const checked = folderList.querySelector('input[type="radio"]:checked');
+    folderList.querySelectorAll('.dup-folder-row').forEach(row => {
+        const isKeep = row.querySelector('input[type="radio"]') === checked;
+        row.classList.toggle('dup-row-keep', isKeep);
+        row.classList.toggle('dup-row-will-delete', !isKeep);
+        row.querySelector('.dup-keep-label').textContent = isKeep ? 'KEEP' : 'DEL';
+    });
+}
+
+async function handleDeleteGroup(groupEl) {
+    const toDelete = [...groupEl.querySelectorAll('.dup-row-will-delete')]
+        .map(row => row.dataset.folderPath);
+
+    if (toDelete.length === 0) {
+        showToast('All folders in this group are marked KEEP — nothing to delete.', 'info');
+        return;
+    }
+
+    const pathList = toDelete.map(p => `  • ${p}`).join('\n');
+    if (!confirm(
+        `This will PERMANENTLY DELETE the following folder(s) and ALL their contents:\n\n` +
+        pathList +
+        `\n\nThis cannot be undone. Continue?`
+    )) return;
+
+    const deleteBtn = groupEl.querySelector('.dup-delete-btn');
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<span class="spinner"></span> DELETING...';
+
+    let errors = 0;
+    for (const folder_path of toDelete) {
+        try {
+            const res = await fetch('/api/delete-folder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folder_path })
+            });
+            const result = await res.json();
+            if (result.error) {
+                errors++;
+                showToast(`Error: ${result.error}`, 'error');
+            }
+        } catch (e) {
+            errors++;
+            showToast(`Network error deleting ${folder_path}`, 'error');
+        }
+    }
+
+    if (errors === 0) {
+        showToast(`Deleted ${toDelete.length} folder(s) successfully.`, 'success');
+    }
+
+    // Refresh the duplicate list to reflect the new state
+    await loadDuplicates();
 }
 
 // Toast Notification Manager
