@@ -15,10 +15,10 @@ app = FastAPI(title="Yamaha DX7 Voice Browser")
 # Enable CORS for development flexibility
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 # Global scan state
@@ -78,15 +78,17 @@ def run_background_scan(directory_path: str):
             
             if parsed_voices:
                 db_voices = []
-                folder_path = os.path.dirname(file_path)
+                # Normalize to forward slashes for consistent cross-platform DB storage
+                folder_path = os.path.dirname(file_path).replace('\\', '/')
+                file_path_norm = file_path.replace('\\', '/')
                 file_name = os.path.basename(file_path)
-                
+
                 for pv in parsed_voices:
                     db_voices.append({
                         "voice_name": pv["name"],
                         "folder_path": folder_path,
                         "file_name": file_name,
-                        "file_path": file_path,
+                        "file_path": file_path_norm,
                         "position": pv["position"],
                         "patch_type": pv.get("patch_type", "Voice"),
                     })
@@ -209,7 +211,6 @@ def reveal_in_explorer(request: RevealRequest):
 
 # Mount static files to serve the front-end SPA
 # Note: Place this after the API routes so it doesn't shadow them
-if not os.path.exists("static"):
-    os.makedirs("static")
+os.makedirs("static", exist_ok=True)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

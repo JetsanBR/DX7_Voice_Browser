@@ -87,7 +87,7 @@ body {
 /* Container */
 .container {
     width: 100%;
-    max-width: 1100px;
+    max-width: 1600px;
     display: flex;
     flex-direction: column;
     gap: 2rem;
@@ -514,12 +514,6 @@ body {
 .result-counter strong {
     color: var(--accent-teal);
     text-shadow: 0 0 4px var(--accent-teal-glow);
-}
-
-/* Results Content */
-.voices-container {
-    min-height: 250px;
-    position: relative;
 }
 
 /* Loading & Empty States */

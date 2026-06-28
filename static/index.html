@@ -116,7 +116,7 @@
                     <div class="search-wrapper">
                         <i class="fa-solid fa-magnifying-glass search-icon"></i>
                         <input type="text" id="search-input" placeholder="Type patch name to filter dynamically..." autocomplete="off">
-                        <button id="clear-search-btn" class="clear-search-btn"><i class="fa-solid fa-xmark"></i></button>
+                        <button id="clear-search-btn" class="clear-search-btn" aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
             </div>
@@ -157,7 +157,7 @@
                         <p>Enter a target directory above and run a SCAN to catalog your Yamaha .syx files.</p>
                     </div>
 
-                    <div id="result-counter" class="result-counter hidden"></div>
+                    <div id="result-counter" class="result-counter hidden" aria-live="polite"></div>
 
                     <div class="table-scroll-wrapper">
                         <table class="voices-table hidden" id="voices-table">
@@ -241,12 +241,12 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="toast hidden">
+    <div id="toast" class="toast hidden" role="alert" aria-live="assertive">
         <i id="toast-icon" class="fa-solid fa-circle-info"></i>
         <span id="toast-message">Message goes here</span>
     </div>
 
     <!-- Script inclusion -->
-    <script src="app.js"></script>
+    <script src="app.js" defer></script>
 </body>
 </html>

@@ -3,67 +3,70 @@ import os
 import hashlib
 import json
 import shutil
+from contextlib import closing
 
 DB_FILE = "voices.db"
+RESULT_LIMIT = 200
 
-def get_db_connection():
+
+def _connect():
+    """Opens a DB connection with Row factory enabled."""
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
-RESULT_LIMIT = 200
 
 def init_db():
     """Initializes the database schema and indexes if they don't exist."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS voices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            voice_name TEXT NOT NULL,
-            folder_path TEXT NOT NULL,
-            file_name TEXT NOT NULL,
-            file_path TEXT NOT NULL,
-            position INTEGER NOT NULL,
-            patch_type TEXT NOT NULL DEFAULT 'Voice'
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS voices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                voice_name TEXT NOT NULL,
+                folder_path TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                patch_type TEXT NOT NULL DEFAULT 'Voice'
+            )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_voice_name ON voices (voice_name)"
         )
-    """)
-    # Index for fast case-insensitive LIKE searches
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_voice_name ON voices (voice_name)
-    """)
-    conn.commit()
-    # Migrate existing databases that pre-date the patch_type column
-    try:
-        cursor.execute("ALTER TABLE voices ADD COLUMN patch_type TEXT NOT NULL DEFAULT 'Voice'")
         conn.commit()
-    except Exception:
-        pass  # column already exists
-    conn.close()
+        # Migrate databases that pre-date the patch_type column
+        cursor.execute("PRAGMA table_info(voices)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'patch_type' not in columns:
+            cursor.execute(
+                "ALTER TABLE voices ADD COLUMN patch_type TEXT NOT NULL DEFAULT 'Voice'"
+            )
+            conn.commit()
+
 
 def clear_db():
     """Clears all records from the database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM voices")
-    conn.commit()
-    conn.close()
+    with closing(_connect()) as conn:
+        conn.execute("DELETE FROM voices")
+        conn.commit()
+
 
 def insert_voices(voices):
     """
     Inserts a list of patch records (voices, performances, etc.).
     Each dict must have: voice_name, folder_path, file_name, file_path, position, patch_type.
+    Paths are expected to use forward slashes (normalized by the caller).
     """
     if not voices:
         return
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.executemany("""
-        INSERT INTO voices (voice_name, folder_path, file_name, file_path, position, patch_type)
-        VALUES (:voice_name, :folder_path, :file_name, :file_path, :position, :patch_type)
-    """, voices)
-    conn.commit()
-    conn.close()
+    with closing(_connect()) as conn:
+        conn.executemany("""
+            INSERT INTO voices (voice_name, folder_path, file_name, file_path, position, patch_type)
+            VALUES (:voice_name, :folder_path, :file_name, :file_path, :position, :patch_type)
+        """, voices)
+        conn.commit()
+
 
 def get_all_voices(search_query=None, folder_filter=None, type_filter=None):
     """
@@ -71,58 +74,57 @@ def get_all_voices(search_query=None, folder_filter=None, type_filter=None):
     alphabetically. Supports optional text search, folder prefix filter, and type filter.
     Returns: { "voices": [...], "total": <int> }
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     conditions, params = [], []
     if search_query:
         conditions.append("voice_name LIKE ?")
         params.append(f"%{search_query}%")
     if folder_filter:
+        # Normalize to forward slashes — paths in DB are stored with /
+        folder_norm = folder_filter.replace('\\', '/')
         conditions.append("(folder_path = ? OR folder_path LIKE ?)")
-        params.extend([folder_filter, folder_filter + os.sep + '%'])
+        params.extend([folder_norm, folder_norm + '/%'])
     if type_filter:
         conditions.append("patch_type = ?")
         params.append(type_filter)
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-    cursor.execute(
-        f"SELECT COUNT(DISTINCT voice_name || '|' || patch_type) FROM voices {where}",
-        params
-    )
-    total = cursor.fetchone()[0]
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"SELECT COUNT(DISTINCT voice_name || '|' || patch_type) FROM voices {where}",
+            params
+        )
+        total = cursor.fetchone()[0]
 
-    cursor.execute(
-        f"""
-        SELECT
-            voice_name,
-            patch_type,
-            folder_path,
-            file_name,
-            file_path,
-            position,
-            COUNT(*) AS file_count
-        FROM voices
-        {where}
-        GROUP BY voice_name, patch_type
-        ORDER BY voice_name ASC
-        LIMIT ?
-        """,
-        params + [RESULT_LIMIT]
-    )
-    rows = cursor.fetchall()
-    conn.close()
+        cursor.execute(
+            f"""
+            SELECT
+                voice_name,
+                patch_type,
+                folder_path,
+                file_name,
+                file_path,
+                position,
+                COUNT(*) AS file_count
+            FROM voices
+            {where}
+            GROUP BY voice_name, patch_type
+            ORDER BY voice_name ASC
+            LIMIT ?
+            """,
+            params + [RESULT_LIMIT]
+        )
+        rows = cursor.fetchall()
+
     return {"voices": [dict(row) for row in rows], "total": total}
 
 
 def get_all_folders():
     """Returns a sorted list of unique folder paths currently indexed in the database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT folder_path FROM voices ORDER BY folder_path ASC")
-    paths = [row[0] for row in cursor.fetchall()]
-    conn.close()
-    return paths
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT folder_path FROM voices ORDER BY folder_path ASC")
+        return [row[0] for row in cursor.fetchall()]
 
 
 def get_voices_by_name(voice_name: str, patch_type: str = None):
@@ -131,24 +133,25 @@ def get_voices_by_name(voice_name: str, patch_type: str = None):
     Used by the "duplicate files" modal to show every file containing a patch with that name.
     Returns: list of dicts with voice_name, patch_type, folder_path, file_name, file_path, position
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    conditions = ["voice_name = ?"]
+    params = [voice_name]
     if patch_type:
-        cursor.execute("""
+        conditions.append("patch_type = ?")
+        params.append(patch_type)
+    where = "WHERE " + " AND ".join(conditions)
+
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"""
             SELECT voice_name, patch_type, folder_path, file_name, file_path, position
-            FROM voices
-            WHERE voice_name = ? AND patch_type = ?
+            FROM voices {where}
             ORDER BY file_name ASC, position ASC
-        """, (voice_name, patch_type))
-    else:
-        cursor.execute("""
-            SELECT voice_name, patch_type, folder_path, file_name, file_path, position
-            FROM voices
-            WHERE voice_name = ?
-            ORDER BY file_name ASC, position ASC
-        """, (voice_name,))
-    rows = cursor.fetchall()
-    conn.close()
+            """,
+            params
+        )
+        rows = cursor.fetchall()
+
     return [dict(row) for row in rows]
 
 
@@ -204,15 +207,14 @@ def get_duplicate_folder_groups():
     ]
     Groups are sorted by folder count descending.
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT folder_path, file_name, file_path, position, voice_name
-        FROM voices
-        ORDER BY folder_path ASC, file_path ASC, id ASC
-    """)
-    rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT folder_path, file_name, file_path, position, voice_name
+            FROM voices
+            ORDER BY folder_path ASC, file_path ASC, id ASC
+        """)
+        rows = [dict(r) for r in cursor.fetchall()]
 
     if not rows:
         return []
@@ -268,8 +270,9 @@ def get_duplicate_folder_groups():
 
 def delete_folder(folder_path: str):
     """
-    Removes all DB records for folder_path (and any indexed subfolders),
-    then deletes the entire directory tree from disk via shutil.rmtree.
+    Deletes the directory tree from disk first, then removes DB records on success.
+    Performing disk deletion first ensures the DB is never left inconsistent when
+    rmtree fails (e.g. permission error or file locked).
 
     Returns:
     {
@@ -278,28 +281,27 @@ def delete_folder(folder_path: str):
         "error": str | None
     }
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    folder_norm = folder_path.replace('\\', '/')
 
-    # Check if any indexed subfolder lives inside this directory
-    cursor.execute(
-        "SELECT COUNT(DISTINCT folder_path) FROM voices WHERE folder_path LIKE ?",
-        (folder_path + os.sep + '%',)
-    )
-    had_subfolders = cursor.fetchone()[0] > 0
-
-    # Remove DB records for this folder and any subfolders
-    cursor.execute(
-        "DELETE FROM voices WHERE folder_path = ? OR folder_path LIKE ?",
-        (folder_path, folder_path + os.sep + '%')
-    )
-    conn.commit()
-    conn.close()
-
-    # Delete the directory tree from disk
+    # Step 1: Delete from disk. Bail early on failure — DB is untouched.
     try:
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)
-        return {'deleted_path': folder_path, 'had_indexed_subfolders': had_subfolders, 'error': None}
     except Exception as e:
-        return {'deleted_path': folder_path, 'had_indexed_subfolders': had_subfolders, 'error': str(e)}
+        return {'deleted_path': folder_path, 'had_indexed_subfolders': False, 'error': str(e)}
+
+    # Step 2: Disk deletion succeeded — now clean up DB records.
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT COUNT(DISTINCT folder_path) FROM voices WHERE folder_path LIKE ?",
+            (folder_norm + '/%',)
+        )
+        had_subfolders = cursor.fetchone()[0] > 0
+        cursor.execute(
+            "DELETE FROM voices WHERE folder_path = ? OR folder_path LIKE ?",
+            (folder_norm, folder_norm + '/%')
+        )
+        conn.commit()
+
+    return {'deleted_path': folder_path, 'had_indexed_subfolders': had_subfolders, 'error': None}

@@ -1,4 +1,6 @@
-import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # DX7II/DX7S Performance record layout constants (verified against real .syx files).
 # PMEM bulk dump: F0 43 0n 7E <size_msb> <size_lsb> <10-byte header> <records> F7
@@ -18,20 +20,23 @@ AMEM_RECORD_SIZE  = 35    # bytes per extended-voice slot
 
 
 def clean_voice_name(name_bytes: bytes) -> str:
-    """
-    Cleans up a 10-byte voice name from a DX7 SysEx file.
-    Replaces non-printable ASCII characters with spaces and strips whitespace.
-    """
-    cleaned_chars = []
-    for b in name_bytes:
-        if 32 <= b <= 126:
-            cleaned_chars.append(chr(b))
-        else:
-            cleaned_chars.append(' ')
-    cleaned_name = "".join(cleaned_chars).strip()
-    if not cleaned_name:
-        cleaned_name = "INIT VOICE"
-    return cleaned_name
+    """Replaces non-printable ASCII bytes with spaces and strips the result."""
+    cleaned = "".join(chr(b) if 32 <= b <= 126 else ' ' for b in name_bytes).strip()
+    return cleaned if cleaned else "INIT VOICE"
+
+
+def _parse_vmem_bank(data: bytes, bank_start: int, bank_index: int) -> list:
+    """Extracts 32 voices from a VMEM bank starting at bank_start."""
+    voices = []
+    for v in range(32):
+        offset = bank_start + v * 128
+        voices.append({
+            "name": clean_voice_name(data[offset + 118: offset + 128]),
+            "position": v + 1,
+            "bank_index": bank_index,
+            "patch_type": "Voice",
+        })
+    return voices
 
 
 def _merge_vmem_amem(results: list) -> list:
@@ -78,8 +83,8 @@ def parse_syx_file(file_path: str) -> list:
 
     Detects the following Yamaha SysEx formats:
       - VMEM (format 0x09): DX7 32-voice bulk dump — patch_type "Voice"
-      - PMEM (format 0x07): DX7II performance bulk dump — patch_type "Performance"
-      - AMEM (format 0x04): DX7II additional voice bulk dump — patch_type "Gen 2 Extended"
+      - PMEM (format 0x7E): DX7II/DX7S performance bulk dump — patch_type "Performance"
+      - AMEM (format 0x06): DX7II/DX7S additional voice bulk dump — patch_type "Gen 2 Extended"
       - Raw 4096-byte fallback (no header) — patch_type "Voice"
 
     Returns a list of dicts:
@@ -93,14 +98,11 @@ def parse_syx_file(file_path: str) -> list:
       ...
     ]
     """
-    if not os.path.exists(file_path):
-        return []
-
     try:
         with open(file_path, 'rb') as f:
             data = f.read()
-    except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        logger.error("Error reading file %s: %s", file_path, e)
         return []
 
     results = []
@@ -123,15 +125,7 @@ def parse_syx_file(file_path: str) -> list:
         if format_byte == 0x09 and data[i + 4] == 0x20 and data[i + 5] == 0x00:
             voice_data_start = i + 6
             if voice_data_start + 4096 <= data_len:
-                for v in range(32):
-                    offset = voice_data_start + v * 128
-                    name_bytes = data[offset + 118: offset + 128]
-                    results.append({
-                        "name": clean_voice_name(name_bytes),
-                        "position": v + 1,
-                        "bank_index": vmem_bank_count,
-                        "patch_type": "Voice",
-                    })
+                results.extend(_parse_vmem_bank(data, voice_data_start, vmem_bank_count))
                 vmem_bank_count += 1
                 i = voice_data_start + 4096
             else:
@@ -152,8 +146,7 @@ def parse_syx_file(file_path: str) -> list:
                     offset = records_start + p * PMEM_RECORD_SIZE
                     name_end = offset + PMEM_NAME_OFFSET + PMEM_NAME_LENGTH
                     if name_end <= data_start + size:
-                        name_bytes = data[offset + PMEM_NAME_OFFSET: name_end]
-                        name = clean_voice_name(name_bytes)
+                        name = clean_voice_name(data[offset + PMEM_NAME_OFFSET: name_end])
                         if name == "INIT VOICE":
                             name = "INIT PERF"
                     else:
@@ -175,7 +168,7 @@ def parse_syx_file(file_path: str) -> list:
         elif format_byte == AMEM_FORMAT_BYTE:
             size = (data[i + 4] << 7) | data[i + 5]
             data_start = i + 6
-            if size > 0 and AMEM_RECORD_SIZE > 0 and data_start + size <= data_len:
+            if size > 0 and data_start + size <= data_len:
                 num_slots = min(size // AMEM_RECORD_SIZE, 32)
                 for s in range(num_slots):
                     results.append({
@@ -196,14 +189,6 @@ def parse_syx_file(file_path: str) -> list:
 
     # Raw 4096-byte fallback: headerless single-bank VMEM dump
     if not results and data_len == 4096:
-        for v in range(32):
-            offset = v * 128
-            name_bytes = data[offset + 118: offset + 128]
-            results.append({
-                "name": clean_voice_name(name_bytes),
-                "position": v + 1,
-                "bank_index": 0,
-                "patch_type": "Voice",
-            })
+        results = _parse_vmem_bank(data, 0, 0)
 
     return results

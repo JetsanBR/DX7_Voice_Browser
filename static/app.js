@@ -1,3 +1,8 @@
+// Constants
+const POLL_INTERVAL_MS   = 500;
+const SEARCH_DEBOUNCE_MS = 300;
+const TOAST_DURATION_MS  = 4000;
+
 // State Management
 let allVoices = [];      // Current page of grouped results from server (up to LIMIT)
 let filteredVoices = []; // Sorted view for rendering
@@ -5,6 +10,7 @@ let totalVoices = 0;     // Total matching unique patch names in the database
 let isScanning = false;
 let statusInterval = null;
 let searchDebounceTimer = null;
+let voicesAbortController = null;
 let currentSort = { key: 'name', asc: true };
 
 // Folder tree state
@@ -117,12 +123,18 @@ function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeFilesModal();
     });
+
+    // Cleanup polling interval when page is unloaded
+    window.addEventListener('pagehide', () => {
+        if (statusInterval) clearInterval(statusInterval);
+    });
 }
 
 // Check if scanning is running (e.g. if page reloaded during scan)
 async function checkScanStatusOnLoad() {
     try {
         const response = await fetch('/api/scan-status');
+        if (!response.ok) throw new Error(`Status ${response.status}`);
         const state = await response.json();
         if (state.status === 'scanning') {
             startPollingStatus();
@@ -136,6 +148,8 @@ async function checkScanStatusOnLoad() {
 
 // Fetch grouped patches from backend — one row per unique (name, type), capped at LIMIT
 async function loadVoices(query = '') {
+    if (voicesAbortController) voicesAbortController.abort();
+    voicesAbortController = new AbortController();
     showLoading(true);
     try {
         const params = new URLSearchParams();
@@ -144,7 +158,7 @@ async function loadVoices(query = '') {
         if (selectedType) params.set('patch_type', selectedType);
         const qs = params.toString();
         const url = qs ? `/api/voices?${qs}` : '/api/voices';
-        const response = await fetch(url);
+        const response = await fetch(url, { signal: voicesAbortController.signal });
         if (!response.ok) throw new Error("Failed to load patches.");
         const result = await response.json();
         allVoices = result.voices;
@@ -152,6 +166,7 @@ async function loadVoices(query = '') {
         sortAndRender();
         updateLcdVoicesCount(totalVoices);
     } catch (e) {
+        if (e.name === 'AbortError') return;
         showToast(e.message, 'error');
     } finally {
         showLoading(false);
@@ -198,6 +213,7 @@ function startPollingStatus() {
     statusInterval = setInterval(async () => {
         try {
             const response = await fetch('/api/scan-status');
+            if (!response.ok) throw new Error(`Poll failed: ${response.status}`);
             const state = await response.json();
             
             updateLcd(state);
@@ -220,9 +236,9 @@ function startPollingStatus() {
                 loadFolders();
             }
         } catch (e) {
-            console.error("Error polling scan status:", e);
+            showToast('Connection error while polling scan status.', 'error');
         }
-    }, 500);
+    }, POLL_INTERVAL_MS);
 }
 
 // Clear Database Handler
@@ -293,7 +309,11 @@ async function showFilesModal(voiceName, patchType) {
         renderModalList(files);
     } catch (e) {
         modalLoading.classList.add('hidden');
-        modalList.innerHTML = `<div class="modal-error"><i class="fa-solid fa-triangle-exclamation"></i> ${e.message}</div>`;
+        const errEl = document.createElement('div');
+        errEl.className = 'modal-error';
+        errEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ';
+        errEl.append(e.message);
+        modalList.appendChild(errEl);
     }
 }
 
@@ -306,23 +326,42 @@ function renderModalList(files) {
     files.forEach((f, idx) => {
         const item = document.createElement('div');
         item.className = 'modal-file-item';
-        item.innerHTML = `
-            <div class="modal-file-index">${String(idx + 1).padStart(2, '0')}</div>
-            <div class="modal-file-info">
-                <div class="modal-file-name">
-                    <i class="fa-solid fa-file-audio"></i>
-                    <span>${f.file_name}</span>
-                    <span class="modal-pos-pill">${f.position}</span>
-                </div>
-                <div class="modal-file-path" title="${f.folder_path}">${f.folder_path}</div>
-            </div>
-            <button class="btn-reveal modal-reveal-btn" title="Reveal in Explorer" data-path="${f.file_path}">
-                <i class="fa-regular fa-folder-open"></i>
-            </button>
-        `;
-        item.querySelector('.modal-reveal-btn').addEventListener('click', () => {
-            revealInExplorer(f.file_path);
-        });
+
+        const indexEl = document.createElement('div');
+        indexEl.className = 'modal-file-index';
+        indexEl.textContent = String(idx + 1).padStart(2, '0');
+
+        const infoEl = document.createElement('div');
+        infoEl.className = 'modal-file-info';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'modal-file-name';
+        nameEl.innerHTML = '<i class="fa-solid fa-file-audio"></i>';
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = f.file_name;
+        const posPill = document.createElement('span');
+        posPill.className = 'modal-pos-pill';
+        posPill.textContent = f.position;
+        nameEl.appendChild(nameSpan);
+        nameEl.appendChild(posPill);
+
+        const pathEl = document.createElement('div');
+        pathEl.className = 'modal-file-path';
+        pathEl.textContent = f.folder_path;
+        pathEl.title = f.folder_path;
+
+        infoEl.appendChild(nameEl);
+        infoEl.appendChild(pathEl);
+
+        const revealBtn = document.createElement('button');
+        revealBtn.className = 'btn-reveal modal-reveal-btn';
+        revealBtn.title = 'Reveal in Explorer';
+        revealBtn.innerHTML = '<i class="fa-regular fa-folder-open"></i>';
+        revealBtn.addEventListener('click', () => revealInExplorer(f.file_path));
+
+        item.appendChild(indexEl);
+        item.appendChild(infoEl);
+        item.appendChild(revealBtn);
         modalList.appendChild(item);
     });
 }
@@ -343,7 +382,7 @@ function handleSearchInput() {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
         loadVoices(query.trim());
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
 }
 
 function clearSearch() {
@@ -594,13 +633,15 @@ function updateProgressBar(state) {
 
 async function loadFolders() {
     try {
-        const paths = await fetch('/api/folders').then(r => r.json());
+        const response = await fetch('/api/folders');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const paths = await response.json();
         folderTreeRoot.innerHTML = '';
         expandedNodes.clear();
         const tree = buildFolderTree(paths);
         renderFolderTree(tree, folderTreeRoot, 0);
     } catch (e) {
-        console.error('Failed to load folder tree:', e);
+        showToast('Failed to load folder tree.', 'error');
     }
 }
 
@@ -608,26 +649,74 @@ function buildFolderTree(paths) {
     if (!paths || paths.length === 0) {
         return { name: 'ALL FOLDERS', fullPath: null, children: [] };
     }
+
     const norm = p => p.replace(/\\/g, '/');
-    const nodeMap = new Map();
-    for (const p of paths) {
-        const segments = norm(p).split('/').filter(Boolean);
-        nodeMap.set(norm(p), { name: segments[segments.length - 1] || p, fullPath: p, children: [] });
+
+    // Create a node for every path segment, including intermediates that aren't
+    // directly in the DB (folders that contain only subfolders, no .syx files).
+    const nodeMap = new Map(); // normKey -> { name, fullPath, children }
+
+    function ensureNode(normKey, segs) {
+        if (!nodeMap.has(normKey)) {
+            // Reconstruct the original OS path from segments
+            let fullPath;
+            if (/^[A-Za-z]:$/.test(segs[0])) {
+                fullPath = segs[0] + (segs.length > 1 ? '/' + segs.slice(1).join('/') : '/');
+            } else {
+                fullPath = '/' + segs.join('/');
+            }
+            nodeMap.set(normKey, { name: segs[segs.length - 1], fullPath, children: [] });
+        }
+        return nodeMap.get(normKey);
     }
-    const topLevel = [];
+
     for (const p of paths) {
         const parts = norm(p).split('/').filter(Boolean);
-        let placed = false;
-        for (let len = parts.length - 1; len >= 1; len--) {
-            const parentKey = parts.slice(0, len).join('/');
-            if (nodeMap.has(parentKey)) {
-                nodeMap.get(parentKey).children.push(nodeMap.get(norm(p)));
-                placed = true;
-                break;
+        for (let len = 1; len <= parts.length; len++) {
+            ensureNode(parts.slice(0, len).join('/'), parts.slice(0, len));
+        }
+    }
+
+    // Wire every node to its parent
+    for (const [key, node] of nodeMap) {
+        const parts = key.split('/');
+        if (parts.length > 1) {
+            const parent = nodeMap.get(parts.slice(0, -1).join('/'));
+            if (parent && !parent.children.includes(node)) {
+                parent.children.push(node);
             }
         }
-        if (!placed) topLevel.push(nodeMap.get(norm(p)));
     }
+
+    // Find the deepest common ancestor across all paths
+    const allParts = paths.map(p => norm(p).split('/').filter(Boolean));
+    let commonLen = 0;
+    while (
+        commonLen < allParts[0].length &&
+        allParts.every(parts => parts[commonLen] === allParts[0][commonLen])
+    ) {
+        commonLen++;
+    }
+
+    // Show the tree starting from the common ancestor (usually the scan root folder)
+    let topLevel;
+    if (commonLen > 0) {
+        const commonKey = allParts[0].slice(0, commonLen).join('/');
+        const commonNode = nodeMap.get(commonKey);
+        topLevel = commonNode ? [commonNode] : [];
+    } else {
+        // Paths on different drives — show unique first segments
+        const seen = new Set();
+        topLevel = [];
+        for (const parts of allParts) {
+            if (!seen.has(parts[0])) {
+                seen.add(parts[0]);
+                const n = nodeMap.get(parts[0]);
+                if (n) topLevel.push(n);
+            }
+        }
+    }
+
     return { name: 'ALL FOLDERS', fullPath: null, children: topLevel };
 }
 
@@ -816,18 +905,24 @@ function renderDuplicateGroups(groups) {
             row.innerHTML = `
                 <label class="dup-radio-label" for="${radioId}">
                     <input type="radio" id="${radioId}" name="${radioName}"
-                           value="${folder.folder_path}" ${idx === 0 ? 'checked' : ''}>
+                           ${idx === 0 ? 'checked' : ''}>
                     <span class="dup-radio-indicator"><i class="fa-solid fa-check"></i></span>
                     <span class="dup-keep-label">${idx === 0 ? 'KEEP' : 'DEL'}</span>
                 </label>
                 <div class="dup-folder-info">
-                    <span class="dup-folder-path" title="${folder.folder_path}">${folder.folder_path}</span>
+                    <span class="dup-folder-path"></span>
                     <span class="dup-folder-meta">${folder.file_count} file${folder.file_count !== 1 ? 's' : ''}</span>
                 </div>
                 <button class="btn-reveal dup-reveal-btn" title="Reveal in Explorer">
                     <i class="fa-regular fa-folder-open"></i>
                 </button>
             `;
+            // Set user-derived data via DOM properties to avoid XSS
+            const radioInput = row.querySelector('input[type="radio"]');
+            radioInput.value = folder.folder_path;
+            const pathSpan = row.querySelector('.dup-folder-path');
+            pathSpan.textContent = folder.folder_path;
+            pathSpan.title = folder.folder_path;
 
             row.querySelector('input[type="radio"]').addEventListener('change', () =>
                 updateGroupRowStates(folderList)
@@ -934,5 +1029,5 @@ function showToast(message, type = 'info') {
         toastTimeout = setTimeout(() => {
             toast.classList.add('hidden');
         }, 300);
-    }, 4000);
+    }, TOAST_DURATION_MS);
 }

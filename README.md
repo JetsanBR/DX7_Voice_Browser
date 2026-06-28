@@ -153,12 +153,14 @@ Within each 128-byte voice block, bytes 118–127 hold the 10-byte ASCII voice n
 
 **PMEM (DX7II/DX7S Performance):** Body begins with a 10-byte `LM  8973PM` header, followed by 32 records of 51 bytes each. The 20-byte performance name starts at byte offset 31 within each record.
 
-**AMEM (DX7II/DX7S Additional Voice Data):** 32 records of 35 bytes each, no name data. Synthetic names `Ext Voice 01`–`Ext Voice 32` are assigned to identify each slot. AMEM banks are often bundled in the same `.syx` file alongside a VMEM bank.
+**AMEM (DX7II/DX7S Additional Voice Data):** 32 records of 35 bytes each, no name data. Synthetic names `Ext Voice 01`–`Ext Voice 32` are assigned initially, then resolved by the merge step below.
+
+**VMEM + AMEM merge (`_merge_vmem_amem`):** The DX7S and DX7II store VMEM and AMEM banks in the same `.syx` file — the synth always loads them together as a single Gen 2 Voice. When both are present, the parser merges each matched pair by `(bank_index, position)`: the resulting entry gets the `patch_type` `"Gen 2 Extended"` and the voice name from the VMEM slot. Unmatched VMEM voices keep their original type; unmatched AMEM slots keep their synthetic name.
 
 **Parser handles four cases:**
 1. **Headered VMEM** — Scans for `F0 43 xx 09 20 00`; supports multiple banks concatenated in one file.
 2. **Headered PMEM** — Scans for `F0 43 xx 7E`; skips 10-byte body header, extracts performance names.
-3. **Headered AMEM** — Scans for `F0 43 xx 06`; stores synthetic slot names.
+3. **Headered AMEM** — Scans for `F0 43 xx 06`; assigns synthetic slot names, then merges with any VMEM bank in the same file.
 4. **Raw headerless dump** — If exactly 4096 bytes with no recognisable header, treats the whole file as a single VMEM bank.
 
 ---
@@ -207,11 +209,13 @@ Returns a sorted list of all unique folder paths currently indexed in the databa
 **Response:**
 ```json
 [
-  "C:\\Music\\DX7\\Factory",
-  "C:\\Music\\DX7\\Factory\\ROM1",
-  "C:\\Music\\DX7\\User"
+  "C:/Music/DX7/Factory",
+  "C:/Music/DX7/Factory/ROM1",
+  "C:/Music/DX7/User"
 ]
 ```
+
+> **Note:** Paths are stored internally with forward slashes `/` regardless of OS, so all path values returned by the API use forward slashes.
 
 ---
 
@@ -232,9 +236,9 @@ Results are grouped by `(voice_name, patch_type)` and sorted alphabetically. Ret
     {
       "voice_name": "BASS 1",
       "patch_type": "Voice",
-      "folder_path": "C:\\Music\\DX7_Patches\\Classic",
+      "folder_path": "C:/Music/DX7_Patches/Classic",
       "file_name": "ROM1A.syx",
-      "file_path": "C:\\Music\\DX7_Patches\\Classic\\ROM1A.syx",
+      "file_path": "C:/Music/DX7_Patches/Classic/ROM1A.syx",
       "position": 3,
       "file_count": 4
     }
@@ -262,9 +266,9 @@ Fetch all individual records matching a patch name (and optionally a type). Used
   {
     "voice_name": "BASS 1",
     "patch_type": "Voice",
-    "folder_path": "C:\\Music\\DX7_Patches\\Classic",
+    "folder_path": "C:/Music/DX7_Patches/Classic",
     "file_name": "ROM1A.syx",
-    "file_path": "C:\\Music\\DX7_Patches\\Classic\\ROM1A.syx",
+    "file_path": "C:/Music/DX7_Patches/Classic/ROM1A.syx",
     "position": 3
   }
 ]
@@ -285,14 +289,14 @@ Analyzes the database and returns groups of folders with identical `.syx` conten
     "fingerprint": "a3f9c2...",
     "folders": [
       {
-        "folder_path": "C:\\Music\\DX7\\ROM",
+        "folder_path": "C:/Music/DX7/ROM",
         "file_count": 3,
-        "example_file_path": "C:\\Music\\DX7\\ROM\\ROM1A.syx"
+        "example_file_path": "C:/Music/DX7/ROM/ROM1A.syx"
       },
       {
-        "folder_path": "C:\\Backup\\DX7\\ROM",
+        "folder_path": "C:/Backup/DX7/ROM",
         "file_count": 3,
-        "example_file_path": "C:\\Backup\\DX7\\ROM\\ROM1A.syx"
+        "example_file_path": "C:/Backup/DX7/ROM/ROM1A.syx"
       }
     ]
   }
@@ -315,7 +319,7 @@ Permanently deletes the entire directory tree for a given folder from disk and r
 **Response:**
 ```json
 {
-  "deleted_path": "C:\\Backup\\DX7\\ROM",
+  "deleted_path": "C:/Backup/DX7/ROM",
   "had_indexed_subfolders": false,
   "error": null
 }
@@ -401,7 +405,7 @@ Single-page HTML shell. No build step required. Sections:
 Plain ES2020 JavaScript. Key responsibilities:
 - **`loadVoices(query)`** — Fetches patches from `/api/voices` with optional `q`, `folder`, and `patch_type` params; parses `{voices, total}` response
 - **`loadFolders()`** — Fetches `/api/folders`, builds the folder tree via `buildFolderTree()`, and renders it with `renderFolderTree()`
-- **`buildFolderTree(paths)`** — Converts a flat list of absolute paths into a nested tree object using path prefix matching
+- **`buildFolderTree(paths)`** — Converts a flat list of absolute paths into a nested tree object; creates intermediate nodes for every path segment (not just leaf DB paths), so the full hierarchy is visible even for folders that hold only subfolders. Finds the deepest common ancestor as the tree root.
 - **`renderFolderTree(node, container, depth)`** — Recursively renders tree nodes with expand/collapse chevrons; depth 0–1 expanded by default
 - **`selectTreeFolder(path)`** — Sets `selectedFolder` and reloads the patch list; clicking the selected folder clears the filter
 - **`toggleFolderTree()`** — Collapses/expands the sidebar by toggling `.collapsed` on `.folder-tree-panel`
@@ -429,7 +433,9 @@ Plain ES2020 JavaScript. Key responsibilities:
 | `selectedType` | Currently active type filter (`""` = all) |
 | `treeOpen` | Whether the folder tree sidebar is visible |
 | `expandedNodes` | `Set` of folder paths that are expanded in the tree |
-| `searchDebounceTimer` | Timer ID for the 300ms search debounce |
+| `searchDebounceTimer` | Timer ID for the search debounce |
+| `voicesAbortController` | `AbortController` used to cancel an in-flight `/api/voices` request when a newer one is triggered |
+| `statusInterval` | `setInterval` handle for the scan-status polling loop; cleared on completion or page unload |
 
 ### `style.css`
 CSS custom properties design system with a dark, retro-synth theme:
@@ -480,7 +486,7 @@ Expected output: 96 voices across 3 banks at varying directory depths.
 - Search results are **capped at 200 rows** (`database.RESULT_LIMIT`). Column sorting applies only to the returned page, not the full dataset. Increase the constant if a higher browse limit is needed.
 - **Folder deletion is irreversible** — the Cleanup tab uses `shutil.rmtree`, which permanently removes the entire directory and all its contents. There is no recycle bin or undo.
 - Duplicate folder detection is based solely on **data in the current database**. If files have been added, moved, or deleted on disk since the last scan, re-scan before running Cleanup to get accurate results.
-- **AMEM has no patch names** — Gen 2 Extended Voice slots are stored with synthetic names (`Ext Voice 01`–`Ext Voice 32`) since the AMEM format carries no name data. The VMEM bank paired with an AMEM bank (often in the same file) holds the actual voice names for those slots.
+- **AMEM has no patch names** — The AMEM format carries no name data. When a VMEM bank is bundled in the same file (the common DX7S/DX7II case), names are taken from the paired VMEM slots after merging. If an AMEM bank arrives without a paired VMEM, synthetic names `Ext Voice 01`–`Ext Voice 32` are kept.
 
 ---
 
