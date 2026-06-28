@@ -87,7 +87,8 @@ def run_background_scan(directory_path: str):
                         "folder_path": folder_path,
                         "file_name": file_name,
                         "file_path": file_path,
-                        "position": pv["position"]
+                        "position": pv["position"],
+                        "patch_type": pv.get("patch_type", "Voice"),
                     })
                 
                 database.insert_voices(db_voices)
@@ -128,22 +129,31 @@ def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
 def get_scan_status():
     return scan_state
 
-@app.get("/api/voices")
-def get_voices(q: Optional[str] = None):
+@app.get("/api/folders")
+def get_folders():
+    """Returns all unique folder paths currently indexed in the database."""
     try:
-        voices = database.get_all_voices(q)
-        return voices
+        return database.get_all_folders()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/voices")
+def get_voices(q: Optional[str] = None,
+               folder: Optional[str] = None,
+               patch_type: Optional[str] = None):
+    try:
+        return database.get_all_voices(q, folder, patch_type)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/voices/files")
-def get_voices_files(name: str):
+def get_voices_files(name: str, patch_type: Optional[str] = None):
     """
-    Returns every individual record whose voice_name exactly matches `name`.
+    Returns every individual record matching name (and optionally patch_type).
     Used by the frontend to populate the duplicate-files detail modal.
     """
     try:
-        files = database.get_voices_by_name(name)
+        files = database.get_voices_by_name(name, patch_type)
         return files
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

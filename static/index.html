@@ -103,53 +103,80 @@
 
         <!-- Voice Search & Explorer Dashboard -->
         <main class="voice-explorer card" id="section-explorer" role="tabpanel">
+            <!-- Header: title + tree toggle + search -->
             <div class="explorer-header">
                 <div class="explorer-title">
                     <i class="fa-solid fa-wave-square"></i>
                     <h2>PATCH EXPLORER</h2>
                 </div>
-                
-                <!-- Search & Filters -->
+                <button id="tree-toggle-btn" class="btn-icon" title="Toggle folder tree" aria-expanded="true">
+                    <i class="fa-solid fa-folder-tree"></i>
+                </button>
                 <div class="filters">
                     <div class="search-wrapper">
                         <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input type="text" id="search-input" placeholder="Type voice name to filter dynamically..." autocomplete="off">
+                        <input type="text" id="search-input" placeholder="Type patch name to filter dynamically..." autocomplete="off">
                         <button id="clear-search-btn" class="clear-search-btn"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
             </div>
 
-            <!-- Voice List Results -->
-            <div class="voices-container">
-                <div id="loading-state" class="loading-state hidden">
-                    <div class="retro-loader"></div>
-                    <p>Loading database patches...</p>
-                </div>
-                
-                <div id="empty-state" class="empty-state">
-                    <i class="fa-solid fa-compact-disc empty-icon"></i>
-                    <h3>No voices found in database</h3>
-                    <p>Enter a target directory above and run a SCAN to catalog your Yamaha .syx files.</p>
-                </div>
+            <!-- Type filter pills -->
+            <div class="type-tab-bar">
+                <button class="type-tab active" data-type="">ALL</button>
+                <button class="type-tab" data-type="Voice">
+                    <i class="fa-solid fa-wave-square"></i> VOICE
+                </button>
+                <button class="type-tab" data-type="Performance">
+                    <i class="fa-solid fa-layer-group"></i> PERFORMANCE
+                </button>
+                <button class="type-tab" data-type="Gen 2 Extended">
+                    <i class="fa-solid fa-sliders"></i> GEN 2 EXT
+                </button>
+            </div>
 
-                <div id="result-counter" class="result-counter hidden"></div>
+            <!-- Body: folder tree sidebar + voice list -->
+            <div class="explorer-body">
+                <aside class="folder-tree-panel" id="folder-tree-panel">
+                    <div class="tree-header">
+                        <i class="fa-solid fa-folder-tree"></i>
+                        <span>FOLDERS</span>
+                    </div>
+                    <div id="folder-tree-root" class="folder-tree"></div>
+                </aside>
 
-                <div class="table-scroll-wrapper">
-                    <table class="voices-table hidden" id="voices-table">
-                        <thead>
-                            <tr>
-                                <th class="col-name" data-sort="name">Voice Name <i class="fa-solid fa-sort"></i></th>
-                                <th class="col-pos" data-sort="pos">Pos <i class="fa-solid fa-sort"></i></th>
-                                <th class="col-file" data-sort="file">Sysex File <i class="fa-solid fa-sort"></i></th>
-                                <th class="col-path">Folder Path</th>
-                                <th class="col-files" data-sort="files">Files <i class="fa-solid fa-sort"></i></th>
-                                <th class="col-actions">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="voices-tbody">
-                            <!-- Voices dynamically populated here -->
-                        </tbody>
-                    </table>
+                <div class="voices-content">
+                    <div id="loading-state" class="loading-state hidden">
+                        <div class="retro-loader"></div>
+                        <p>Loading database patches...</p>
+                    </div>
+
+                    <div id="empty-state" class="empty-state">
+                        <i class="fa-solid fa-compact-disc empty-icon"></i>
+                        <h3>No patches found in database</h3>
+                        <p>Enter a target directory above and run a SCAN to catalog your Yamaha .syx files.</p>
+                    </div>
+
+                    <div id="result-counter" class="result-counter hidden"></div>
+
+                    <div class="table-scroll-wrapper">
+                        <table class="voices-table hidden" id="voices-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-name" data-sort="name">Patch Name <i class="fa-solid fa-sort"></i></th>
+                                    <th class="col-type">Type</th>
+                                    <th class="col-pos" data-sort="pos">Pos <i class="fa-solid fa-sort"></i></th>
+                                    <th class="col-file" data-sort="file">Sysex File <i class="fa-solid fa-sort"></i></th>
+                                    <th class="col-path">Folder Path</th>
+                                    <th class="col-files" data-sort="files">Files <i class="fa-solid fa-sort"></i></th>
+                                    <th class="col-actions">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="voices-tbody">
+                                <!-- Patches dynamically populated here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </main>

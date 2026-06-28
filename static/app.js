@@ -1,11 +1,17 @@
 // State Management
 let allVoices = [];      // Current page of grouped results from server (up to LIMIT)
 let filteredVoices = []; // Sorted view for rendering
-let totalVoices = 0;     // Total matching unique voice names in the database
+let totalVoices = 0;     // Total matching unique patch names in the database
 let isScanning = false;
 let statusInterval = null;
 let searchDebounceTimer = null;
 let currentSort = { key: 'name', asc: true };
+
+// Folder tree state
+let selectedFolder = null;  // null = all folders
+let selectedType = '';       // '' = all types
+let treeOpen = true;
+let expandedNodes = new Set();
 
 // DOM Elements
 const dirInput = document.getElementById('dir-input');
@@ -36,6 +42,12 @@ const toastIcon = document.getElementById('toast-icon');
 const toastMessage = document.getElementById('toast-message');
 const resultCounter = document.getElementById('result-counter');
 
+// Folder Tree Elements
+const treeToggleBtn = document.getElementById('tree-toggle-btn');
+const folderTreePanel = document.getElementById('folder-tree-panel');
+const folderTreeRoot = document.getElementById('folder-tree-root');
+const typeTabs = document.querySelectorAll('.type-tab');
+
 // Cleanup Tab Elements
 const tabExplorer = document.getElementById('tab-explorer');
 const tabCleanup = document.getElementById('tab-cleanup');
@@ -59,6 +71,7 @@ const modalCloseBtn = document.getElementById('modal-close-btn');
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     loadVoices();
+    loadFolders();
     checkScanStatusOnLoad();
     setupEventListeners();
 });
@@ -82,6 +95,12 @@ function setupEventListeners() {
             handleSort(sortKey);
         });
     });
+
+    // Folder tree toggle
+    treeToggleBtn.addEventListener('click', toggleFolderTree);
+
+    // Type filter tabs
+    typeTabs.forEach(tab => tab.addEventListener('click', () => setTypeFilter(tab.dataset.type)));
 
     // Tab switching
     tabExplorer.addEventListener('click', () => switchTab('explorer'));
@@ -115,15 +134,18 @@ async function checkScanStatusOnLoad() {
     }
 }
 
-// Fetch grouped voices from backend — one row per unique name, capped at LIMIT
+// Fetch grouped patches from backend — one row per unique (name, type), capped at LIMIT
 async function loadVoices(query = '') {
     showLoading(true);
     try {
-        const url = query
-            ? `/api/voices?q=${encodeURIComponent(query)}`
-            : '/api/voices';
+        const params = new URLSearchParams();
+        if (query) params.set('q', query);
+        if (selectedFolder) params.set('folder', selectedFolder);
+        if (selectedType) params.set('patch_type', selectedType);
+        const qs = params.toString();
+        const url = qs ? `/api/voices?${qs}` : '/api/voices';
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to load voices.");
+        if (!response.ok) throw new Error("Failed to load patches.");
         const result = await response.json();
         allVoices = result.voices;
         totalVoices = result.total;
@@ -192,9 +214,10 @@ function startPollingStatus() {
                 if (state.error) {
                     showToast(`Scan interrupted: ${state.error}`, 'error');
                 } else {
-                    showToast(`Scan complete! Cataloged ${state.voices_found} voices.`, 'success');
+                    showToast(`Scan complete! Cataloged ${state.voices_found} patches.`, 'success');
                 }
                 loadVoices();
+                loadFolders();
             }
         } catch (e) {
             console.error("Error polling scan status:", e);
@@ -220,6 +243,9 @@ async function handleClearDatabase() {
         
         allVoices = [];
         totalVoices = 0;
+        selectedFolder = null;
+        expandedNodes.clear();
+        folderTreeRoot.innerHTML = '';
         sortAndRender();
         updateLcdVoicesCount(0);
         showToast("Database cleared successfully.", "success");
@@ -248,7 +274,7 @@ async function revealInExplorer(filePath) {
 // Duplicate-Files Modal
 // -----------------------------------------------------------------------
 
-async function showFilesModal(voiceName) {
+async function showFilesModal(voiceName, patchType) {
     // Show modal immediately with loading state
     modalVoiceName.textContent = voiceName;
     modalList.innerHTML = '';
@@ -257,7 +283,9 @@ async function showFilesModal(voiceName) {
     document.body.style.overflow = 'hidden';
 
     try {
-        const response = await fetch(`/api/voices/files?name=${encodeURIComponent(voiceName)}`);
+        const params = new URLSearchParams({ name: voiceName });
+        if (patchType) params.set('patch_type', patchType);
+        const response = await fetch(`/api/voices/files?${params}`);
         if (!response.ok) throw new Error("Failed to fetch file list.");
         const files = await response.json();
 
@@ -389,9 +417,9 @@ function renderVoicesTable() {
     if (totalVoices > 0) {
         resultCounter.classList.remove('hidden');
         if (allVoices.length < totalVoices) {
-            resultCounter.innerHTML = `Showing <strong>${allVoices.length.toLocaleString()}</strong> of <strong>${totalVoices.toLocaleString()}</strong> unique voices &mdash; refine your search to see more`;
+            resultCounter.innerHTML = `Showing <strong>${allVoices.length.toLocaleString()}</strong> of <strong>${totalVoices.toLocaleString()}</strong> unique patches &mdash; refine your search to see more`;
         } else {
-            resultCounter.innerHTML = `<strong>${totalVoices.toLocaleString()}</strong> unique voice${totalVoices !== 1 ? 's' : ''} found`;
+            resultCounter.innerHTML = `<strong>${totalVoices.toLocaleString()}</strong> unique patch${totalVoices !== 1 ? 'es' : ''} found`;
         }
     } else {
         resultCounter.classList.add('hidden');
@@ -408,55 +436,68 @@ function renderVoicesTable() {
     emptyState.classList.add('hidden');
     voicesTable.classList.remove('hidden');
     
+    const TYPE_CFG = {
+        'Voice':          { label: 'VOICE',  cls: 'type-badge-voice', icon: 'fa-wave-square' },
+        'Performance':    { label: 'PERF',   cls: 'type-badge-perf',  icon: 'fa-layer-group' },
+        'Gen 2 Extended': { label: 'GEN 2',  cls: 'type-badge-gen2',  icon: 'fa-sliders' },
+    };
+
     filteredVoices.forEach(voice => {
         const tr = document.createElement('tr');
-        
-        // Voice Name Column
+
+        // Patch Name Column
         const tdName = document.createElement('td');
         tdName.className = 'td-name';
         tdName.textContent = voice.voice_name;
-        
+
+        // Type Column
+        const tdType = document.createElement('td');
+        tdType.className = 'col-type-cell';
+        const typeCfg = TYPE_CFG[voice.patch_type] || { label: voice.patch_type || '?', cls: '', icon: 'fa-question' };
+        const typeBadge = document.createElement('span');
+        typeBadge.className = `type-badge ${typeCfg.cls}`;
+        typeBadge.innerHTML = `<i class="fa-solid ${typeCfg.icon}"></i> ${typeCfg.label}`;
+        tdType.appendChild(typeBadge);
+
         // Position Column
         const tdPos = document.createElement('td');
         const posSpan = document.createElement('span');
         posSpan.className = 'pos-pill';
         posSpan.textContent = voice.position;
         tdPos.appendChild(posSpan);
-        
+
         // Sysex File Column
         const tdFile = document.createElement('td');
         const fileWrapper = document.createElement('div');
         fileWrapper.className = 'file-wrapper';
         fileWrapper.innerHTML = `<i class="fa-solid fa-file-audio"></i> <span>${voice.file_name}</span>`;
         tdFile.appendChild(fileWrapper);
-        
+
         // Folder Path Column
         const tdPath = document.createElement('td');
         tdPath.className = 'col-path';
         tdPath.textContent = voice.folder_path;
         tdPath.title = voice.folder_path;
-        
+
         // Files Count Column
         const tdFiles = document.createElement('td');
         tdFiles.className = 'col-files-cell';
         const fileCount = voice.file_count || 1;
         if (fileCount > 1) {
-            // Clickable badge for duplicates
             const badge = document.createElement('button');
             badge.className = 'file-count-badge file-count-dup';
-            badge.title = `${fileCount} files contain this voice — click to view all`;
+            badge.title = `${fileCount} files contain this patch — click to view all`;
             badge.innerHTML = `<i class="fa-solid fa-layer-group"></i> ${fileCount}`;
-            badge.addEventListener('click', () => showFilesModal(voice.voice_name));
+            badge.addEventListener('click', () => showFilesModal(voice.voice_name, voice.patch_type));
             tdFiles.appendChild(badge);
         } else {
-            // Single file — non-interactive pill
             const badge = document.createElement('span');
             badge.className = 'file-count-badge file-count-single';
-            badge.title = '1 file contains this voice';
+            badge.title = '1 file contains this patch';
             badge.innerHTML = `<i class="fa-solid fa-file"></i> 1`;
             tdFiles.appendChild(badge);
         }
-        
+
         // Action Column
         const tdAction = document.createElement('td');
         tdAction.className = 'col-actions';
@@ -466,14 +507,15 @@ function renderVoicesTable() {
         revealBtn.title = "Reveal file in Windows Explorer";
         revealBtn.addEventListener('click', () => revealInExplorer(voice.file_path));
         tdAction.appendChild(revealBtn);
-        
+
         tr.appendChild(tdName);
+        tr.appendChild(tdType);
         tr.appendChild(tdPos);
         tr.appendChild(tdFile);
         tr.appendChild(tdPath);
         tr.appendChild(tdFiles);
         tr.appendChild(tdAction);
-        
+
         voicesTbody.appendChild(tr);
     });
 }
@@ -544,6 +586,146 @@ function updateProgressBar(state) {
         progressFilename.textContent = `Scanning: ${state.current_file || 'indexing...'}`;
         progressRatio.textContent = `${state.files_scanned} / ${state.total_files} files`;
     }
+}
+
+// -----------------------------------------------------------------------
+// Folder Tree
+// -----------------------------------------------------------------------
+
+async function loadFolders() {
+    try {
+        const paths = await fetch('/api/folders').then(r => r.json());
+        folderTreeRoot.innerHTML = '';
+        expandedNodes.clear();
+        const tree = buildFolderTree(paths);
+        renderFolderTree(tree, folderTreeRoot, 0);
+    } catch (e) {
+        console.error('Failed to load folder tree:', e);
+    }
+}
+
+function buildFolderTree(paths) {
+    if (!paths || paths.length === 0) {
+        return { name: 'ALL FOLDERS', fullPath: null, children: [] };
+    }
+    const norm = p => p.replace(/\\/g, '/');
+    const nodeMap = new Map();
+    for (const p of paths) {
+        const segments = norm(p).split('/').filter(Boolean);
+        nodeMap.set(norm(p), { name: segments[segments.length - 1] || p, fullPath: p, children: [] });
+    }
+    const topLevel = [];
+    for (const p of paths) {
+        const parts = norm(p).split('/').filter(Boolean);
+        let placed = false;
+        for (let len = parts.length - 1; len >= 1; len--) {
+            const parentKey = parts.slice(0, len).join('/');
+            if (nodeMap.has(parentKey)) {
+                nodeMap.get(parentKey).children.push(nodeMap.get(norm(p)));
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) topLevel.push(nodeMap.get(norm(p)));
+    }
+    return { name: 'ALL FOLDERS', fullPath: null, children: topLevel };
+}
+
+function renderFolderTree(node, container, depth) {
+    const hasChildren = node.children && node.children.length > 0;
+    const nodeKey = node.fullPath ?? '__root__';
+
+    // Expand root and its immediate children by default
+    if (depth <= 1) expandedNodes.add(nodeKey);
+    const isExpanded = expandedNodes.has(nodeKey);
+
+    // Build the row element
+    const row = document.createElement('div');
+    row.className = 'tree-node' + (depth === 0 ? ' tree-node-root' : '');
+    row.style.paddingLeft = `${depth * 0.9 + 0.4}rem`;
+    if (node.fullPath) {
+        row.dataset.path = node.fullPath;
+        if (node.fullPath === selectedFolder) row.classList.add('selected');
+    } else if (selectedFolder === null) {
+        row.classList.add('selected');
+    }
+
+    // Chevron button (stops click from bubbling to row)
+    const chevronBtn = document.createElement('button');
+    chevronBtn.className = 'tree-chevron-btn';
+    chevronBtn.innerHTML = `<i class="fa-solid fa-chevron-right tree-chevron${isExpanded ? ' open' : ''}${!hasChildren ? ' tree-chevron-hidden' : ''}"></i>`;
+    if (hasChildren) {
+        chevronBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            const expanded = expandedNodes.has(nodeKey);
+            if (expanded) {
+                expandedNodes.delete(nodeKey);
+                chevronBtn.querySelector('.tree-chevron').classList.remove('open');
+                childrenEl.classList.add('hidden');
+            } else {
+                expandedNodes.add(nodeKey);
+                chevronBtn.querySelector('.tree-chevron').classList.add('open');
+                childrenEl.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Folder icon
+    const icon = document.createElement('i');
+    icon.className = node.fullPath ? 'fa-regular fa-folder tree-folder-icon' : 'fa-solid fa-folder-tree tree-folder-icon';
+
+    // Label
+    const label = document.createElement('span');
+    label.className = 'tree-node-label';
+    label.textContent = node.name;
+
+    row.appendChild(chevronBtn);
+    row.appendChild(icon);
+    row.appendChild(label);
+
+    // Row click: select/deselect this folder
+    row.addEventListener('click', () => selectTreeFolder(node.fullPath));
+
+    container.appendChild(row);
+
+    // Children container
+    const childrenEl = document.createElement('div');
+    childrenEl.className = 'tree-children' + (isExpanded ? '' : ' hidden');
+    if (hasChildren) {
+        for (const child of node.children) {
+            renderFolderTree(child, childrenEl, depth + 1);
+        }
+        container.appendChild(childrenEl);
+    }
+}
+
+function selectTreeFolder(path) {
+    // Toggle: clicking the already-selected folder deselects it (shows all)
+    selectedFolder = (selectedFolder === path) ? null : path;
+    document.querySelectorAll('.tree-node').forEach(n => {
+        const nodePath = n.dataset.path ?? null;
+        n.classList.toggle('selected',
+            selectedFolder === null ? nodePath === null : nodePath === selectedFolder
+        );
+    });
+    loadVoices(searchInput.value);
+}
+
+function toggleFolderTree() {
+    treeOpen = !treeOpen;
+    folderTreePanel.classList.toggle('collapsed', !treeOpen);
+    treeToggleBtn.setAttribute('aria-expanded', String(treeOpen));
+    treeToggleBtn.classList.toggle('active', treeOpen);
+}
+
+// -----------------------------------------------------------------------
+// Type Filter Tabs
+// -----------------------------------------------------------------------
+
+function setTypeFilter(type) {
+    selectedType = type;
+    typeTabs.forEach(t => t.classList.toggle('active', t.dataset.type === type));
+    loadVoices(searchInput.value);
 }
 
 // -----------------------------------------------------------------------

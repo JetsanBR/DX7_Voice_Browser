@@ -639,7 +639,7 @@ body {
 
 /* Column Specific Styles */
 .col-name {
-    width: 25%;
+    width: 20%;
 }
 
 .td-name {
@@ -673,8 +673,17 @@ body {
     text-shadow: 0 0 4px var(--accent-teal-glow);
 }
 
+.col-type {
+    width: 8%;
+    white-space: nowrap;
+}
+
+.col-type-cell {
+    white-space: nowrap;
+}
+
 .col-file {
-    width: 25%;
+    width: 20%;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -696,7 +705,7 @@ body {
 }
 
 .col-path {
-    width: 30%;
+    width: 25%;
     font-size: 0.8rem;
     color: var(--text-muted);
     max-width: 200px;
@@ -1289,4 +1298,317 @@ body {
     font-size: 0.72rem;
     color: var(--text-muted);
     font-family: var(--font-mono);
+}
+
+/* -----------------------------------------------------------------------
+   Explorer Body — Sidebar + Content layout
+   ----------------------------------------------------------------------- */
+
+.explorer-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Push the search filters to the right edge of the header */
+.explorer-header .filters {
+    margin-left: auto;
+}
+
+/* Toggle button for folder tree sidebar */
+.btn-icon {
+    background: transparent;
+    border: 1px solid var(--border-card);
+    color: var(--text-muted);
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all var(--transition-speed);
+    flex-shrink: 0;
+}
+
+.btn-icon:hover,
+.btn-icon.active {
+    border-color: var(--accent-teal);
+    color: var(--accent-teal);
+    background: hsla(172, 100%, 45%, 0.08);
+}
+
+/* Type filter pill tabs */
+.type-tab-bar {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-card);
+}
+
+.type-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-card);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+}
+
+.type-tab i {
+    font-size: 0.6rem;
+}
+
+.type-tab:hover {
+    border-color: var(--accent-teal);
+    color: var(--accent-teal);
+    background: hsla(172, 100%, 45%, 0.06);
+}
+
+.type-tab.active {
+    background: var(--accent-teal);
+    border-color: var(--accent-teal);
+    color: hsl(225, 20%, 6%);
+    box-shadow: 0 0 8px var(--accent-teal-glow);
+}
+
+/* Explorer body: sidebar + content side by side */
+.explorer-body {
+    display: flex;
+    gap: 0;
+    min-height: 350px;
+}
+
+/* Folder tree sidebar */
+.folder-tree-panel {
+    width: 240px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-card);
+    padding-right: 0.5rem;
+    margin-right: 0.75rem;
+    transition: width 0.2s ease, opacity 0.2s ease, margin 0.2s ease, padding 0.2s ease;
+}
+
+.folder-tree-panel.collapsed {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding-right: 0;
+    margin-right: 0;
+    border-right: none;
+}
+
+/* Folder tree scrollbar */
+.folder-tree-panel::-webkit-scrollbar {
+    width: 4px;
+}
+.folder-tree-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.folder-tree-panel::-webkit-scrollbar-thumb {
+    background: var(--border-card);
+    border-radius: 2px;
+}
+
+.tree-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    padding: 0.2rem 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--border-card);
+    margin-bottom: 0.35rem;
+}
+
+.tree-header i {
+    color: var(--accent-teal);
+    font-size: 0.75rem;
+    text-shadow: 0 0 6px var(--accent-teal-glow);
+}
+
+.folder-tree {
+    display: flex;
+    flex-direction: column;
+}
+
+.tree-node {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.4rem;
+    cursor: pointer;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background var(--transition-speed), color var(--transition-speed),
+                border-left-color var(--transition-speed);
+}
+
+.tree-node:hover {
+    background: hsla(172, 100%, 45%, 0.06);
+    color: var(--text-primary);
+}
+
+.tree-node.selected {
+    background: hsla(172, 100%, 45%, 0.12);
+    color: var(--accent-teal);
+    border-left-color: var(--accent-teal);
+    text-shadow: 0 0 4px var(--accent-teal-glow);
+}
+
+.tree-node-root {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 0.1rem;
+}
+
+.tree-node-root.selected {
+    color: var(--accent-teal);
+}
+
+/* Chevron button within tree node */
+.tree-chevron-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tree-chevron {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    transition: transform 0.15s ease, color 0.15s;
+}
+
+.tree-chevron.open {
+    transform: rotate(90deg);
+}
+
+.tree-chevron-hidden {
+    visibility: hidden;
+}
+
+.tree-folder-icon {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color var(--transition-speed);
+}
+
+.tree-node:hover .tree-folder-icon,
+.tree-node.selected .tree-folder-icon {
+    color: var(--accent-teal);
+}
+
+.tree-node-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tree-children {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Voices content area (right of tree) */
+.voices-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* -----------------------------------------------------------------------
+   Type Badges (in table rows)
+   ----------------------------------------------------------------------- */
+
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-display);
+    font-size: 0.52rem;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.type-badge i {
+    font-size: 0.5rem;
+}
+
+.type-badge-voice {
+    background: hsla(172, 100%, 45%, 0.1);
+    color: var(--accent-teal);
+    border: 1px solid hsla(172, 100%, 45%, 0.3);
+}
+
+.type-badge-perf {
+    background: hsla(270, 60%, 60%, 0.12);
+    color: hsl(270, 60%, 72%);
+    border: 1px solid hsla(270, 60%, 60%, 0.3);
+}
+
+.type-badge-gen2 {
+    background: hsla(35, 90%, 55%, 0.12);
+    color: hsl(35, 90%, 67%);
+    border: 1px solid hsla(35, 90%, 55%, 0.3);
+}
+
+/* -----------------------------------------------------------------------
+   Responsive adjustments
+   ----------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+    .folder-tree-panel {
+        width: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    .folder-tree-panel {
+        width: 0;
+        opacity: 0;
+        overflow: hidden;
+        padding-right: 0;
+        margin-right: 0;
+        border-right: none;
+    }
+
+    .type-tab-bar {
+        gap: 0.25rem;
+    }
+
+    .type-tab {
+        font-size: 0.58rem;
+        padding: 0.2rem 0.55rem;
+    }
 }

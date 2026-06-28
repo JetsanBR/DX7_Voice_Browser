@@ -1,6 +1,6 @@
 # Yamaha DX7 Voice Browser
 
-A local web application for cataloging, searching, and locating Yamaha DX7 / DX7S synthesizer patch voices stored in SysEx (`.syx`) files.
+A local web application for cataloging, searching, and locating Yamaha DX7 / DX7S / DX7II synthesizer patches — voices, performances, and extended voice data — stored in SysEx (`.syx`) files.
 
 > **Performance note:** Designed to handle thousands of voices. All search and filtering is server-side with a 200-result limit; the frontend never loads the full dataset into memory.
 
@@ -8,7 +8,7 @@ A local web application for cataloging, searching, and locating Yamaha DX7 / DX7
 
 ## Overview
 
-The DX7 Voice Browser scans a directory tree of `.syx` files, parses the binary MIDI System Exclusive (SysEx) format to extract individual voice (patch) names, stores them in a local SQLite database, and presents them through a searchable, retro-styled web UI. A "Reveal in Explorer" action lets you instantly jump to the containing folder of any patch.
+The DX7 Voice Browser scans a directory tree of `.syx` files, parses the binary MIDI System Exclusive (SysEx) format to extract individual patch names (voices, performances, extended voice data), stores them in a local SQLite database, and presents them through a searchable, retro-styled web UI. A collapsible folder tree lets you navigate your collection by directory structure, type filter pills isolate patch categories, and "Reveal in Explorer" jumps to any file instantly.
 
 ---
 
@@ -86,16 +86,18 @@ Then open your browser to: **http://127.0.0.1:8000**
 
 1. **Enter a directory path** — Type an absolute Windows path to a folder containing `.syx` files (can be deeply nested).
 2. **Click SCAN** — The backend walks the directory tree recursively, parses every `.syx` file, and populates the database. A progress bar and retro LCD panel show live status.
-3. **Search voices** — Type in the filter box to instantly narrow results by voice name.
-4. **Sort columns** — Click Voice Name, Pos, Sysex File, or Files column headers to toggle ascending/descending sort.
-5. **Browse grouped results** — The list shows **one row per unique voice name**. The **Files** column shows how many `.syx` files contain that voice name. A teal badge with a stack icon indicates duplicates; a grey badge indicates a single file.
-6. **View duplicate files** — Click the teal Files badge on any row to open the **Duplicate Files** panel, which lists every file that contains that voice, with its bank position and folder path. Each entry has a Reveal button.
-7. **Reveal in Explorer** — Click the folder icon on a main row (reveals the representative file) or inside the duplicate panel (reveals the specific file) to open Windows Explorer with that `.syx` file highlighted.
-8. **Clear Database** — Removes all entries. The next scan starts fresh.
-9. **Cleanup tab** — Click the **CLEANUP** tab to switch to the duplicate folder cleanup view. No rescan is needed — the analysis works from whatever is already in the database.
-10. **Find duplicate folders** — Click **FIND DUPLICATES** to analyze the database and identify folders with identical `.syx` content (same filenames and same 32 voices at the same positions).
-11. **Choose which folder to keep** — Each duplicate group shows all matching folders. Select the one to keep using the radio button; the others are marked DEL.
-12. **Delete duplicates** — Click **DELETE UNSELECTED** on a group to permanently delete the unselected folder(s) and all their contents from disk. A confirmation dialog lists exactly what will be removed. This action is irreversible.
+3. **Navigate with the folder tree** — A collapsible sidebar shows the hierarchy of all scanned folders. Click any node to filter the patch list to that folder and all subfolders. Click the same node again (or "ALL FOLDERS") to clear the filter. Use the tree icon button in the header to collapse/expand the sidebar.
+4. **Filter by patch type** — Use the type pills above the table (ALL / VOICE / PERFORMANCE / GEN 2 EXT) to show only patches of a specific kind. Folder and type filters combine.
+5. **Search patches** — Type in the filter box to instantly narrow results by patch name. Works together with folder and type filters.
+6. **Sort columns** — Click Patch Name, Pos, Sysex File, or Files column headers to toggle ascending/descending sort.
+7. **Browse grouped results** — The list shows **one row per unique (name, type) combination**. The **Type** column shows a colored badge (VOICE / PERF / GEN 2). The **Files** column shows how many `.syx` files contain that patch name.
+8. **View duplicate files** — Click the teal Files badge on any row to open the **Duplicate Files** panel, which lists every file that contains that patch, with its bank position and folder path. Each entry has a Reveal button.
+9. **Reveal in Explorer** — Click the folder icon on a main row or inside the duplicate panel to open Windows Explorer with that `.syx` file highlighted.
+10. **Clear Database** — Removes all entries. The next scan starts fresh.
+11. **Cleanup tab** — Click the **CLEANUP** tab to switch to the duplicate folder cleanup view. No rescan is needed — the analysis works from whatever is already in the database.
+12. **Find duplicate folders** — Click **FIND DUPLICATES** to analyze the database and identify folders with identical `.syx` content (same filenames and same voices at the same positions).
+13. **Choose which folder to keep** — Each duplicate group shows all matching folders. Select the one to keep using the radio button; the others are marked DEL.
+14. **Delete duplicates** — Click **DELETE UNSELECTED** on a group to permanently delete the unselected folder(s) and all their contents from disk. A confirmation dialog lists exactly what will be removed. This action is irreversible.
 
 ---
 
@@ -131,23 +133,33 @@ User types in search box
 
 ### SysEx Parsing Logic (`parser.py`)
 
-The DX7 uses a well-documented **32-voice bulk dump** binary format:
+The parser scans every `.syx` file for Yamaha SysEx messages (`F0 43 0n <format_byte> ...`) and dispatches by format byte:
+
+| Format byte | Type | `patch_type` stored |
+|-------------|------|----------------------|
+| `0x09` | VMEM — DX7 32-voice bulk dump | `"Voice"` |
+| `0x7E` | PMEM — DX7II/DX7S performance bulk dump | `"Performance"` |
+| `0x06` | AMEM — DX7II/DX7S additional voice bulk dump | `"Gen 2 Extended"` |
+| *(none)* | Raw 4096-byte headerless dump | `"Voice"` |
+
+**VMEM layout (existing DX7 format):**
 
 | Offset | Size | Description |
 |--------|------|-------------|
 | 0 | 6 bytes | SysEx header: `F0 43 <ch> 09 20 00` |
 | 6 | 4096 bytes | 32 voices × 128 bytes each |
-| 4102 | 1 byte | Checksum |
-| 4103 | 1 byte | `F7` (End of SysEx) |
 
-**Within each 128-byte voice block:**
-- Bytes 0–117: Operator parameters (6 operators × ~17 bytes + algorithm/global params)
-- Bytes 118–127: **Voice name** (10 ASCII bytes, 7-bit MIDI data)
+Within each 128-byte voice block, bytes 118–127 hold the 10-byte ASCII voice name.
 
-**Parser handles three cases:**
-1. **Standard headered file** — Scans for the `F0 43 xx 09 20 00` signature; supports multiple banks concatenated in a single file (multi-bank `.syx`).
-2. **Raw headerless dump** — If the file is exactly 4096 bytes with no header found, treats the whole file as a single bank.
-3. **Non-printable byte cleanup** — Characters outside ASCII 32–126 are replaced with spaces; resulting name is stripped.
+**PMEM (DX7II/DX7S Performance):** Body begins with a 10-byte `LM  8973PM` header, followed by 32 records of 51 bytes each. The 20-byte performance name starts at byte offset 31 within each record.
+
+**AMEM (DX7II/DX7S Additional Voice Data):** 32 records of 35 bytes each, no name data. Synthetic names `Ext Voice 01`–`Ext Voice 32` are assigned to identify each slot. AMEM banks are often bundled in the same `.syx` file alongside a VMEM bank.
+
+**Parser handles four cases:**
+1. **Headered VMEM** — Scans for `F0 43 xx 09 20 00`; supports multiple banks concatenated in one file.
+2. **Headered PMEM** — Scans for `F0 43 xx 7E`; skips 10-byte body header, extracts performance names.
+3. **Headered AMEM** — Scans for `F0 43 xx 06`; stores synthetic slot names.
+4. **Raw headerless dump** — If exactly 4096 bytes with no recognisable header, treats the whole file as a single VMEM bank.
 
 ---
 
@@ -189,13 +201,29 @@ Poll current scan progress.
 
 ---
 
-### `GET /api/voices?q=<query>`
-Fetch up to 200 **grouped** voices (one row per unique name), optionally filtered.
+### `GET /api/folders`
+Returns a sorted list of all unique folder paths currently indexed in the database. Used to populate the folder tree sidebar.
 
+**Response:**
+```json
+[
+  "C:\\Music\\DX7\\Factory",
+  "C:\\Music\\DX7\\Factory\\ROM1",
+  "C:\\Music\\DX7\\User"
+]
+```
+
+---
+
+### `GET /api/voices`
+Fetch up to 200 **grouped** patches (one row per unique name + type combination), with optional filters.
+
+**Query parameters:**
 - `q` (optional): Case-insensitive substring filter on `voice_name` (SQLite `LIKE`)
-- Results are grouped by `voice_name` and sorted alphabetically
-- Always returns at most `RESULT_LIMIT = 200` unique names; use `total` to detect truncation
-- `file_count` indicates how many individual records share that name
+- `folder` (optional): Show only patches from this folder path or any subfolder beneath it
+- `patch_type` (optional): Exact match on patch type — `"Voice"`, `"Performance"`, or `"Gen 2 Extended"`
+
+Results are grouped by `(voice_name, patch_type)` and sorted alphabetically. Returns at most `RESULT_LIMIT = 200` rows; use `total` to detect truncation.
 
 **Response:**
 ```json
@@ -203,6 +231,7 @@ Fetch up to 200 **grouped** voices (one row per unique name), optionally filtere
   "voices": [
     {
       "voice_name": "BASS 1",
+      "patch_type": "Voice",
       "folder_path": "C:\\Music\\DX7_Patches\\Classic",
       "file_name": "ROM1A.syx",
       "file_path": "C:\\Music\\DX7_Patches\\Classic\\ROM1A.syx",
@@ -214,34 +243,29 @@ Fetch up to 200 **grouped** voices (one row per unique name), optionally filtere
 }
 ```
 
-- `voices`: up to 200 grouped records (one per unique name)
-- `total`: full count of **unique** voice names matching the query
-- `file_count`: number of `.syx` files that contain a voice with this name
+- `patch_type`: `"Voice"`, `"Performance"`, or `"Gen 2 Extended"`
+- `file_count`: number of `.syx` files containing a patch with that name and type
 
 ---
 
-### `GET /api/voices/files?name=<voice_name>`
+### `GET /api/voices/files`
 
-Fetch all individual records that share the given exact voice name. Used by the duplicate files panel.
+Fetch all individual records matching a patch name (and optionally a type). Used by the duplicate files panel.
 
-- `name` (required): Exact voice name to look up
+**Query parameters:**
+- `name` (required): Exact patch name to look up
+- `patch_type` (optional): Limit to a specific type
 
 **Response:**
 ```json
 [
   {
     "voice_name": "BASS 1",
+    "patch_type": "Voice",
     "folder_path": "C:\\Music\\DX7_Patches\\Classic",
     "file_name": "ROM1A.syx",
     "file_path": "C:\\Music\\DX7_Patches\\Classic\\ROM1A.syx",
     "position": 3
-  },
-  {
-    "voice_name": "BASS 1",
-    "folder_path": "C:\\Music\\DX7_Patches\\ROM",
-    "file_name": "ROM1B.syx",
-    "file_path": "C:\\Music\\DX7_Patches\\ROM\\ROM1B.syx",
-    "position": 7
   }
 ]
 ```
@@ -338,20 +362,24 @@ CREATE TABLE IF NOT EXISTS voices (
     folder_path TEXT    NOT NULL,
     file_name   TEXT    NOT NULL,
     file_path   TEXT    NOT NULL,
-    position    INTEGER NOT NULL   -- 1-indexed position within the SysEx bank (1–32)
+    position    INTEGER NOT NULL,   -- 1-indexed within the bank/block (1–32)
+    patch_type  TEXT    NOT NULL DEFAULT 'Voice'
 );
 
 CREATE INDEX IF NOT EXISTS idx_voice_name ON voices (voice_name);
 ```
 
-The index makes `LIKE '%term%'` searches fast even with tens of thousands of rows.
+The `patch_type` column is `"Voice"`, `"Performance"`, or `"Gen 2 Extended"`. Existing databases are migrated automatically via `ALTER TABLE` on first startup after upgrade.
 
 **Result limit:** `database.RESULT_LIMIT = 200` — module-level constant controlling the maximum rows returned per query. Increase it if a higher browse limit is needed.
 
-**Duplicate detection functions:**
+**Key database functions:**
 
-- `get_duplicate_folder_groups()` — Computes a SHA-256 fingerprint for each folder (based on filenames + voice content) and returns groups of folders that share the same fingerprint. Uses `_compute_file_fingerprint()` (per-file hash from voice names and positions) and `_compute_folder_fingerprint()` (hash of all file fingerprints sorted by filename).
-- `delete_folder(folder_path)` — Removes all database records for the given folder (and any indexed subdirectories), then deletes the directory tree from disk using `shutil.rmtree`.
+- `get_all_folders()` — Returns a sorted list of unique `folder_path` values; used to populate the folder tree sidebar.
+- `get_all_voices(search_query, folder_filter, type_filter)` — Grouped query (`GROUP BY voice_name, patch_type`) with optional text search, folder prefix filter, and patch type filter.
+- `get_voices_by_name(voice_name, patch_type)` — Returns all individual records for a given name (and optionally type); used by the duplicate files panel.
+- `get_duplicate_folder_groups()` — SHA-256 fingerprints each folder and returns groups with identical content.
+- `delete_folder(folder_path)` — Removes DB records and deletes the directory tree via `shutil.rmtree`.
 
 > The database is **cleared and repopulated on each scan** — it is not incremental/additive.
 
@@ -364,24 +392,29 @@ Single-page HTML shell. No build step required. Sections:
 - **Header** — Brand title + retro LCD status panel
 - **Command Deck** — Directory input, SCAN button, progress bar, CLEAR DATABASE button
 - **Tab Bar** — Toggles between PATCH EXPLORER and CLEANUP sections
-- **Patch Explorer** — Search input + sortable results table + empty/loading states
+- **Patch Explorer** — Header with tree toggle + type filter pills + sidebar (folder tree) + sortable results table
 - **Cleanup** — Duplicate folder analysis: FIND DUPLICATES button, group cards with per-group DELETE UNSELECTED
-- **Duplicate Files Modal** — Overlay listing all files that share a voice name
+- **Duplicate Files Modal** — Overlay listing all files that share a patch name
 - **Toast** — Fixed-position notification overlay
 
 ### `app.js`
 Plain ES2020 JavaScript. Key responsibilities:
-- **`loadVoices(query)`** — Fetches voices from `/api/voices?q=<query>` (or unfiltered on page load); parses `{voices, total}` response
+- **`loadVoices(query)`** — Fetches patches from `/api/voices` with optional `q`, `folder`, and `patch_type` params; parses `{voices, total}` response
+- **`loadFolders()`** — Fetches `/api/folders`, builds the folder tree via `buildFolderTree()`, and renders it with `renderFolderTree()`
+- **`buildFolderTree(paths)`** — Converts a flat list of absolute paths into a nested tree object using path prefix matching
+- **`renderFolderTree(node, container, depth)`** — Recursively renders tree nodes with expand/collapse chevrons; depth 0–1 expanded by default
+- **`selectTreeFolder(path)`** — Sets `selectedFolder` and reloads the patch list; clicking the selected folder clears the filter
+- **`toggleFolderTree()`** — Collapses/expands the sidebar by toggling `.collapsed` on `.folder-tree-panel`
+- **`setTypeFilter(type)`** — Sets `selectedType` and reloads patches; type + folder filters combine
 - **`handleScanTrigger()`** — POSTs to `/api/scan`, then starts polling
-- **`startPollingStatus()`** — `setInterval` at 500ms; drives LCD and progress bar updates; reloads voices on completion
+- **`startPollingStatus()`** — `setInterval` at 500ms; drives LCD and progress bar; reloads voices and folders on completion
 - **`handleSearchInput()`** — Debounces 300ms then calls `loadVoices(query)` — filtering is fully server-side
-- **`sortAndRender()`** — Sorts the current server-returned page client-side and renders (replaced the old `applyFilterAndRender`)
-- **`renderVoicesTable()`** — DOM-builds `<tr>` rows; updates the result counter ("Showing X of Y" when capped)
+- **`sortAndRender()`** — Sorts the server-returned page client-side and renders
+- **`renderVoicesTable()`** — DOM-builds `<tr>` rows with Type badge; updates the result counter
 - **`revealInExplorer()`** — POSTs to `/api/reveal`
 - **`switchTab(tab)`** — Toggles visibility between PATCH EXPLORER and CLEANUP sections
 - **`loadDuplicates()`** — Fetches `/api/duplicates` and renders results or empty state
 - **`renderDuplicateGroups(groups)`** — Builds group cards with radio buttons and per-group delete button
-- **`updateGroupRowStates(folderList)`** — Updates KEEP/DEL labels and row styling when a radio changes
 - **`handleDeleteGroup(groupEl)`** — Confirms, POSTs `/api/delete-folder` for each unselected row, reloads
 - **`showToast()`** — Auto-dismissing notification (4 s)
 
@@ -392,6 +425,10 @@ Plain ES2020 JavaScript. Key responsibilities:
 | `allVoices` | Current page of results from the server (≤ 200 items) |
 | `filteredVoices` | Sorted view of `allVoices` used for rendering |
 | `totalVoices` | Full matching count from `result.total` (may exceed 200) |
+| `selectedFolder` | Currently selected folder path for the tree filter (`null` = all) |
+| `selectedType` | Currently active type filter (`""` = all) |
+| `treeOpen` | Whether the folder tree sidebar is visible |
+| `expandedNodes` | `Set` of folder paths that are expanded in the tree |
 | `searchDebounceTimer` | Timer ID for the 300ms search debounce |
 
 ### `style.css`
@@ -439,10 +476,11 @@ Expected output: 96 voices across 3 banks at varying directory depths.
 - The `scan_state` dictionary is an **in-process global** with no thread-locking (FastAPI background tasks use a thread pool, but the dictionary updates are simple assignments — adequate for single-user local use).
 - Database path `voices.db` is **relative to the working directory** where `uvicorn` is launched.
 - No authentication — intended for local single-user use only.
-- The `bank_index` field returned by `parser.parse_syx_file()` is **not stored** in the database (only `position` within a bank is stored). If multiple banks exist in one file, voices from all banks are flattened with positions 1–32 repeated per bank.
+- The `bank_index` field returned by `parser.parse_syx_file()` is **not stored** in the database (only `position` within a bank is stored). If multiple banks exist in one file, patches from all banks are flattened with positions 1–32 repeated per bank.
 - Search results are **capped at 200 rows** (`database.RESULT_LIMIT`). Column sorting applies only to the returned page, not the full dataset. Increase the constant if a higher browse limit is needed.
 - **Folder deletion is irreversible** — the Cleanup tab uses `shutil.rmtree`, which permanently removes the entire directory and all its contents. There is no recycle bin or undo.
 - Duplicate folder detection is based solely on **data in the current database**. If files have been added, moved, or deleted on disk since the last scan, re-scan before running Cleanup to get accurate results.
+- **AMEM has no patch names** — Gen 2 Extended Voice slots are stored with synthetic names (`Ext Voice 01`–`Ext Voice 32`) since the AMEM format carries no name data. The VMEM bank paired with an AMEM bank (often in the same file) holds the actual voice names for those slots.
 
 ---
 

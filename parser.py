@@ -1,43 +1,101 @@
 import os
-import re
+
+# DX7II/DX7S Performance record layout constants (verified against real .syx files).
+# PMEM bulk dump: F0 43 0n 7E <size_msb> <size_lsb> <10-byte header> <records> F7
+# Body begins with "LM  8973PM" (10 bytes), then 32 × 51-byte performance records.
+# Performance name is 20 ASCII bytes starting at offset 31 within each record.
+PMEM_FORMAT_BYTE  = 0x7E
+PMEM_HEADER_SIZE  = 10    # "LM  8973PM" prefix before the records
+PMEM_RECORD_SIZE  = 51    # bytes per performance record
+PMEM_NAME_OFFSET  = 31    # offset of the 20-byte name within each record
+PMEM_NAME_LENGTH  = 20    # performance name field width
+
+# DX7II/DX7S Additional Voice (AMEM) record layout constants (verified against real .syx files).
+# AMEM bulk dump: F0 43 0n 06 <size_msb> <size_lsb> <records> F7
+# AMEM slots have no voice names; synthetic names are assigned.
+AMEM_FORMAT_BYTE  = 0x06
+AMEM_RECORD_SIZE  = 35    # bytes per extended-voice slot
+
 
 def clean_voice_name(name_bytes: bytes) -> str:
     """
-    Cleans up a 10-byte voice name from a DX7 Sysex file.
-    Replaces non-printable ASCII characters with spaces,
-    decodes to ASCII, and strips leading/trailing whitespace.
+    Cleans up a 10-byte voice name from a DX7 SysEx file.
+    Replaces non-printable ASCII characters with spaces and strips whitespace.
     """
     cleaned_chars = []
     for b in name_bytes:
-        # DX7 uses standard 7-bit MIDI data bytes (0-127).
-        # Printable ASCII range is 32 (space) to 126 (~).
         if 32 <= b <= 126:
             cleaned_chars.append(chr(b))
         else:
             cleaned_chars.append(' ')
-    
     cleaned_name = "".join(cleaned_chars).strip()
-    # Default name if empty or just spaces
     if not cleaned_name:
         cleaned_name = "INIT VOICE"
     return cleaned_name
 
+
+def _merge_vmem_amem(results: list) -> list:
+    """
+    When a file contains both VMEM (Voice) and AMEM (Gen 2 Extended) banks, the DX7S/DX7II
+    treats each matched pair as a single Gen 2 Voice. Merge by (bank_index, position):
+    the AMEM slot keeps its 'Gen 2 Extended' type but takes the name from the paired VMEM voice.
+    Unmatched VMEM voices stay as 'Voice'; unmatched AMEM slots keep their synthetic name.
+    """
+    vmem = [r for r in results if r['patch_type'] == 'Voice']
+    amem = [r for r in results if r['patch_type'] == 'Gen 2 Extended']
+    other = [r for r in results if r['patch_type'] not in ('Voice', 'Gen 2 Extended')]
+
+    if not vmem or not amem:
+        return results
+
+    vmem_by_key = {(r['bank_index'], r['position']): r for r in vmem}
+    consumed = set()
+    merged = []
+
+    for slot in amem:
+        key = (slot['bank_index'], slot['position'])
+        if key in vmem_by_key:
+            consumed.add(key)
+            merged.append({
+                'name': vmem_by_key[key]['name'],
+                'position': slot['position'],
+                'bank_index': slot['bank_index'],
+                'patch_type': 'Gen 2 Extended',
+            })
+        else:
+            merged.append(slot)
+
+    for voice in vmem:
+        if (voice['bank_index'], voice['position']) not in consumed:
+            merged.append(voice)
+
+    return other + merged
+
+
 def parse_syx_file(file_path: str) -> list:
     """
-    Parses a .syx file to extract DX7/DX7II voices.
+    Parses a .syx file and extracts all DX7/DX7II patches found within it.
+
+    Detects the following Yamaha SysEx formats:
+      - VMEM (format 0x09): DX7 32-voice bulk dump — patch_type "Voice"
+      - PMEM (format 0x07): DX7II performance bulk dump — patch_type "Performance"
+      - AMEM (format 0x04): DX7II additional voice bulk dump — patch_type "Gen 2 Extended"
+      - Raw 4096-byte fallback (no header) — patch_type "Voice"
+
     Returns a list of dicts:
     [
       {
-        "name": "VOICE NAME",
-        "position": 1-32,
-        "bank_index": 0,  # 0-indexed bank in case of multiple banks in one file
+        "name": str,
+        "position": int,    # 1-indexed within the bank/block
+        "bank_index": int,  # 0-indexed bank (for multi-bank files)
+        "patch_type": str,  # "Voice" | "Performance" | "Gen 2 Extended"
       },
       ...
     ]
     """
     if not os.path.exists(file_path):
         return []
-    
+
     try:
         with open(file_path, 'rb') as f:
             data = f.read()
@@ -45,56 +103,107 @@ def parse_syx_file(file_path: str) -> list:
         print(f"Error reading file {file_path}: {e}")
         return []
 
-    voices = []
+    results = []
     data_len = len(data)
-    
-    # 1. Search for DX7 32-voice bulk dump headers
-    # The header is 6 bytes: F0 43 <substatus/channel> 09 20 00
-    # substatus/channel is a 7-bit data byte (0x00 to 0x7F).
-    # We scan the file for this sequence.
-    header_indices = []
+    vmem_bank_count = 0
+    amem_bank_count = 0
     i = 0
+
     while i <= data_len - 6:
-        if (data[i] == 0xF0 and 
-            data[i+1] == 0x43 and 
-            data[i+2] < 0x80 and 
-            data[i+3] == 0x09 and 
-            data[i+4] == 0x20 and 
-            data[i+5] == 0x00):
-            header_indices.append(i)
-            # Skip past the expected length of a 32-voice bank (4104 bytes)
-            # to avoid false positives inside the data block
-            i += 4104
+        # All Yamaha bulk-dump SysEx starts with: F0 43 <substatus/channel 0-7F>
+        if not (data[i] == 0xF0 and data[i + 1] == 0x43 and data[i + 2] < 0x80):
+            i += 1
+            continue
+
+        format_byte = data[i + 3]
+
+        # ------------------------------------------------------------------ #
+        # VMEM — 32-voice bulk dump: F0 43 0n 09 20 00 <4096 bytes> F7       #
+        # ------------------------------------------------------------------ #
+        if format_byte == 0x09 and data[i + 4] == 0x20 and data[i + 5] == 0x00:
+            voice_data_start = i + 6
+            if voice_data_start + 4096 <= data_len:
+                for v in range(32):
+                    offset = voice_data_start + v * 128
+                    name_bytes = data[offset + 118: offset + 128]
+                    results.append({
+                        "name": clean_voice_name(name_bytes),
+                        "position": v + 1,
+                        "bank_index": vmem_bank_count,
+                        "patch_type": "Voice",
+                    })
+                vmem_bank_count += 1
+                i = voice_data_start + 4096
+            else:
+                i += 1
+
+        # ------------------------------------------------------------------ #
+        # PMEM — DX7II/DX7S performance bulk dump: F0 43 0n 7E <msb> <lsb>  #
+        # Body: 10-byte "LM  8973PM" header + 32 × 51-byte records.          #
+        # 20-byte performance name starts at offset 31 within each record.    #
+        # ------------------------------------------------------------------ #
+        elif format_byte == PMEM_FORMAT_BYTE:
+            size = (data[i + 4] << 7) | data[i + 5]
+            data_start = i + 6
+            records_start = data_start + PMEM_HEADER_SIZE
+            if size > PMEM_HEADER_SIZE and data_start + size <= data_len:
+                num_records = (size - PMEM_HEADER_SIZE) // PMEM_RECORD_SIZE
+                for p in range(num_records):
+                    offset = records_start + p * PMEM_RECORD_SIZE
+                    name_end = offset + PMEM_NAME_OFFSET + PMEM_NAME_LENGTH
+                    if name_end <= data_start + size:
+                        name_bytes = data[offset + PMEM_NAME_OFFSET: name_end]
+                        name = clean_voice_name(name_bytes)
+                        if name == "INIT VOICE":
+                            name = "INIT PERF"
+                    else:
+                        name = "INIT PERF"
+                    results.append({
+                        "name": name,
+                        "position": p + 1,
+                        "bank_index": 0,
+                        "patch_type": "Performance",
+                    })
+                i = data_start + size
+            else:
+                i += 1
+
+        # ------------------------------------------------------------------ #
+        # AMEM — DX7II/DX7S additional voice bulk dump: F0 43 0n 06 <msb>   #
+        # 35-byte records, no names; synthetic slot names are assigned.       #
+        # ------------------------------------------------------------------ #
+        elif format_byte == AMEM_FORMAT_BYTE:
+            size = (data[i + 4] << 7) | data[i + 5]
+            data_start = i + 6
+            if size > 0 and AMEM_RECORD_SIZE > 0 and data_start + size <= data_len:
+                num_slots = min(size // AMEM_RECORD_SIZE, 32)
+                for s in range(num_slots):
+                    results.append({
+                        "name": f"Ext Voice {s + 1:02d}",
+                        "position": s + 1,
+                        "bank_index": amem_bank_count,
+                        "patch_type": "Gen 2 Extended",
+                    })
+                amem_bank_count += 1
+                i = data_start + size
+            else:
+                i += 1
+
         else:
             i += 1
 
-    # 2. Extract voices from each found bank
-    if header_indices:
-        for bank_idx, header_idx in enumerate(header_indices):
-            voice_data_start = header_idx + 6
-            # Ensure we have enough bytes for 32 voices (32 * 128 = 4096 bytes)
-            if voice_data_start + 4096 <= data_len:
-                for v in range(32):
-                    start_offset = voice_data_start + v * 128
-                    name_offset = start_offset + 118
-                    name_bytes = data[name_offset:name_offset+10]
-                    voice_name = clean_voice_name(name_bytes)
-                    voices.append({
-                        "name": voice_name,
-                        "position": v + 1,
-                        "bank_index": bank_idx
-                    })
-    # 3. Fallback: If no headers were found, check if it's a raw 4096-byte dump
-    elif data_len == 4096:
+    results = _merge_vmem_amem(results)
+
+    # Raw 4096-byte fallback: headerless single-bank VMEM dump
+    if not results and data_len == 4096:
         for v in range(32):
-            start_offset = v * 128
-            name_offset = start_offset + 118
-            name_bytes = data[name_offset:name_offset+10]
-            voice_name = clean_voice_name(name_bytes)
-            voices.append({
-                "name": voice_name,
+            offset = v * 128
+            name_bytes = data[offset + 118: offset + 128]
+            results.append({
+                "name": clean_voice_name(name_bytes),
                 "position": v + 1,
-                "bank_index": 0
+                "bank_index": 0,
+                "patch_type": "Voice",
             })
-            
-    return voices
+
+    return results
