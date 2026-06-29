@@ -12,6 +12,54 @@ The DX7 Voice Browser scans a directory tree of `.syx` files, parses the binary 
 
 ---
 
+## Design System (read before any UI change)
+
+This project follows a documented design system. **All UI work — by any
+contributor or AI agent — must stay consistent with it.** Full spec:
+[`design_handoff_dx7_redesign/DESIGN_SYSTEM.md`](design_handoff_dx7_redesign/DESIGN_SYSTEM.md);
+tokens: [`static/tokens.css`](static/tokens.css); agent guardrails:
+[`CLAUDE.md`](CLAUDE.md).
+
+**Direction:** dark, techy, modern & bold — *calm by default, loud on purpose.*
+
+### Non-negotiable rules
+
+1. **Tokens only.** Reference `--ds-*` custom properties from `static/tokens.css`
+   for every color, font, size, space, radius and shadow. Never hardcode a raw
+   hex / px value — if a token is missing, add it to `tokens.css` first.
+2. **Two fonts.** Space Grotesk (UI + display) and JetBrains Mono (all data:
+   paths, positions, file names, counts, status). No third family.
+3. **One accent.** `--ds-signal` (`#2fe3c2`) is the only brand/action color.
+   The patch-type hues are data-only; red is destructive-only.
+4. **No glow, no glass, no orbs.** Do not add `text-shadow`/`box-shadow` halos,
+   `backdrop-filter: blur()`, or animated background elements. One subtle shadow
+   is the only elevation.
+5. **Respect the scale.** Type sizes 11–32px from the scale; spacing on a 4px
+   grid; radius 6/10/14/999. Every interactive element gets a visible focus ring.
+
+### Token quick reference
+
+| Group | Values |
+|---|---|
+| Neutrals | bg `#0a0c0f` · sunken `#08090b` · surface `#101317` · elevated `#161a1f` · border `#242a31` / `#313942` |
+| Text | `#eaedf0` · `#c0c7cd` · `#97a1aa` · `#5f6870` |
+| Signal | `#2fe3c2` (ink on signal: `#06231d`) |
+| Patch types | Voice `#2fe3c2` · Performance `#b58cff` · Gen 2 `#f5b860` |
+| Status | success `#4fe09a` · warning `#f5b860` · danger `#ff5a6a` |
+| Spacing | 4 / 8 / 12 / 16 / 24 / 32 / 48 / 72 |
+| Radius | 6 ctrl · 10 card · 14 panel · 999 pill |
+
+### Fonts (replace the old Inter/Orbitron/Share Tech Mono `<link>`)
+
+```html
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+```
+
+> `static/tokens.css` must load **before** `static/style.css`. It also aliases
+> the legacy variable names, so loading it re-skins the app immediately; migrate
+> `style.css` to the `--ds-*` names over time. Rollout order: P0 tokens → P1
+> Patch Explorer → P2 Cleanup/modals → A11y (see DESIGN_SYSTEM.md §6).
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -19,7 +67,7 @@ The DX7 Voice Browser scans a directory tree of `.syx` files, parses the binary 
 | Backend | Python 3, [FastAPI](https://fastapi.tiangolo.com/) |
 | Database | SQLite 3 (via Python's built-in `sqlite3` module) |
 | Frontend | Vanilla HTML5 / CSS3 / JavaScript (ES2020, no framework) |
-| Fonts | Google Fonts — Inter, Orbitron, Share Tech Mono |
+| Fonts | Google Fonts — Space Grotesk, JetBrains Mono |
 | Icons | Font Awesome 6 |
 | ASGI Server | Uvicorn (required to run FastAPI) |
 
@@ -78,13 +126,13 @@ pip install fastapi uvicorn
 uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Then open your browser to: **http://127.0.0.1:8000**
+Then open your browser to: **<http://127.0.0.1:8000>**
 
 ---
 
 ## How to Use
 
-1. **Enter a directory path** — Type an absolute Windows path to a folder containing `.syx` files (can be deeply nested).
+1. **Select a directory** — Type an absolute Windows path directly into the input field, or click the **folder icon** (Browse button) to open a native Windows folder picker and select the target folder.
 2. **Click SCAN** — The backend walks the directory tree recursively, parses every `.syx` file, and populates the database. A progress bar and retro LCD panel show live status.
 3. **Navigate with the folder tree** — A collapsible sidebar shows the hierarchy of all scanned folders. Click any node to filter the patch list to that folder and all subfolders. Click the same node again (or "ALL FOLDERS") to clear the filter. Use the tree icon button in the header to collapse/expand the sidebar.
 4. **Filter by patch type** — Use the type pills above the table (ALL / VOICE / PERFORMANCE / GEN 2 EXT) to show only patches of a specific kind. Folder and type filters combine.
@@ -158,6 +206,7 @@ Within each 128-byte voice block, bytes 118–127 hold the 10-byte ASCII voice n
 **VMEM + AMEM merge (`_merge_vmem_amem`):** The DX7S and DX7II store VMEM and AMEM banks in the same `.syx` file — the synth always loads them together as a single Gen 2 Voice. When both are present, the parser merges each matched pair by `(bank_index, position)`: the resulting entry gets the `patch_type` `"Gen 2 Extended"` and the voice name from the VMEM slot. Unmatched VMEM voices keep their original type; unmatched AMEM slots keep their synthetic name.
 
 **Parser handles four cases:**
+
 1. **Headered VMEM** — Scans for `F0 43 xx 09 20 00`; supports multiple banks concatenated in one file.
 2. **Headered PMEM** — Scans for `F0 43 xx 7E`; skips 10-byte body header, extracts performance names.
 3. **Headered AMEM** — Scans for `F0 43 xx 06`; assigns synthetic slot names, then merges with any VMEM bank in the same file.
@@ -170,14 +219,17 @@ Within each 128-byte voice block, bytes 118–127 hold the 10-byte ASCII voice n
 All endpoints are served by FastAPI at `http://127.0.0.1:8000`.
 
 ### `POST /api/scan`
+
 Start a background directory scan.
 
 **Request body:**
+
 ```json
 { "directory": "C:\\Users\\you\\Music\\DX7_Patches" }
 ```
 
 **Response:**
+
 ```json
 { "message": "Scan started." }
 ```
@@ -187,9 +239,11 @@ Start a background directory scan.
 ---
 
 ### `GET /api/scan-status`
+
 Poll current scan progress.
 
 **Response:**
+
 ```json
 {
   "status": "scanning" | "idle",
@@ -203,10 +257,28 @@ Poll current scan progress.
 
 ---
 
+### `GET /api/browse-folder`
+
+Opens a native OS folder picker dialog (Windows: `tkinter.filedialog.askdirectory`) on the server and returns the path the user selected. Used by the Browse button next to the scan input.
+
+**Response:**
+
+```json
+{ "path": "C:/Users/you/Music/DX7_Patches" }
+```
+
+Returns `{ "path": null }` if the user cancels the dialog without selecting a folder.
+
+> **Windows-only**: Uses Python's `tkinter` standard library. The dialog appears on top of the browser window. No external dependencies are required.
+
+---
+
 ### `GET /api/folders`
+
 Returns a sorted list of all unique folder paths currently indexed in the database. Used to populate the folder tree sidebar.
 
 **Response:**
+
 ```json
 [
   "C:/Music/DX7/Factory",
@@ -220,9 +292,11 @@ Returns a sorted list of all unique folder paths currently indexed in the databa
 ---
 
 ### `GET /api/voices`
+
 Fetch up to 200 **grouped** patches (one row per unique name + type combination), with optional filters.
 
 **Query parameters:**
+
 - `q` (optional): Case-insensitive substring filter on `voice_name` (SQLite `LIKE`)
 - `folder` (optional): Show only patches from this folder path or any subfolder beneath it
 - `patch_type` (optional): Exact match on patch type — `"Voice"`, `"Performance"`, or `"Gen 2 Extended"`
@@ -230,6 +304,7 @@ Fetch up to 200 **grouped** patches (one row per unique name + type combination)
 Results are grouped by `(voice_name, patch_type)` and sorted alphabetically. Returns at most `RESULT_LIMIT = 200` rows; use `total` to detect truncation.
 
 **Response:**
+
 ```json
 {
   "voices": [
@@ -257,10 +332,12 @@ Results are grouped by `(voice_name, patch_type)` and sorted alphabetically. Ret
 Fetch all individual records matching a patch name (and optionally a type). Used by the duplicate files panel.
 
 **Query parameters:**
+
 - `name` (required): Exact patch name to look up
 - `patch_type` (optional): Limit to a specific type
 
 **Response:**
+
 ```json
 [
   {
@@ -283,6 +360,7 @@ Results are sorted by `file_name ASC, position ASC`. No row limit applies.
 Analyzes the database and returns groups of folders with identical `.syx` content sets. Two folders are considered duplicates when they contain exactly the same filenames and each file has the same 32 voices in the same positions.
 
 **Response:**
+
 ```json
 [
   {
@@ -312,11 +390,13 @@ Only groups with 2 or more folders are returned. An empty array means no duplica
 Permanently deletes the entire directory tree for a given folder from disk and removes all matching records from the database.
 
 **Request body:**
+
 ```json
 { "folder_path": "C:\\Backup\\DX7\\ROM" }
 ```
 
 **Response:**
+
 ```json
 {
   "deleted_path": "C:/Backup/DX7/ROM",
@@ -333,6 +413,7 @@ Permanently deletes the entire directory tree for a given folder from disk and r
 ---
 
 ### `POST /api/clear`
+
 Delete all records from the database.
 
 **Response:** `{ "message": "Database cleared successfully." }`
@@ -340,9 +421,11 @@ Delete all records from the database.
 ---
 
 ### `POST /api/reveal`
+
 Open Windows Explorer with the specified file selected.
 
 **Request body:**
+
 ```json
 { "file_path": "C:\\Music\\DX7_Patches\\Classic\\ROM1A.syx" }
 ```
@@ -392,7 +475,9 @@ The `patch_type` column is `"Voice"`, `"Performance"`, or `"Gen 2 Extended"`. Ex
 ## Frontend Architecture (`static/`)
 
 ### `index.html`
+
 Single-page HTML shell. No build step required. Sections:
+
 - **Header** — Brand title + retro LCD status panel
 - **Command Deck** — Directory input, SCAN button, progress bar, CLEAR DATABASE button
 - **Tab Bar** — Toggles between PATCH EXPLORER and CLEANUP sections
@@ -402,7 +487,9 @@ Single-page HTML shell. No build step required. Sections:
 - **Toast** — Fixed-position notification overlay
 
 ### `app.js`
+
 Plain ES2020 JavaScript. Key responsibilities:
+
 - **`loadVoices(query)`** — Fetches patches from `/api/voices` with optional `q`, `folder`, and `patch_type` params; parses `{voices, total}` response
 - **`loadFolders()`** — Fetches `/api/folders`, builds the folder tree via `buildFolderTree()`, and renders it with `renderFolderTree()`
 - **`buildFolderTree(paths)`** — Converts a flat list of absolute paths into a nested tree object; creates intermediate nodes for every path segment (not just leaf DB paths), so the full hierarchy is visible even for folders that hold only subfolders. Finds the deepest common ancestor as the tree root.
@@ -438,7 +525,9 @@ Plain ES2020 JavaScript. Key responsibilities:
 | `statusInterval` | `setInterval` handle for the scan-status polling loop; cleared on completion or page unload |
 
 ### `style.css`
+
 CSS custom properties design system with a dark, retro-synth theme:
+
 - Color palette: teal (`hsl(172, 100%, 45%)`) + red accent on near-black (`hsl(225, 20%, 6%)`)
 - Glassmorphism cards with `backdrop-filter: blur(12px)`
 - Retro LCD panel: `Share Tech Mono` font + scanline overlay + glow text-shadow
@@ -450,6 +539,7 @@ CSS custom properties design system with a dark, retro-synth theme:
 ## Testing
 
 ### Unit Tests — `test_parser.py`
+
 Tests the `parser.py` module in isolation using synthetic SysEx data.
 
 ```powershell
@@ -464,6 +554,7 @@ python test_parser.py
 | 4 | Non-printable bytes are cleaned correctly |
 
 ### Integration Test — `verify_scanner.py`
+
 Tests the full scan pipeline: directory walking → parsing → database insertion.
 Creates a temporary nested folder structure with 3 mock banks, runs `run_background_scan()`, and verifies the database contents.
 

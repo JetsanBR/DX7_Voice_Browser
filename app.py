@@ -131,6 +131,21 @@ def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
 def get_scan_status():
     return scan_state
 
+@app.get("/api/browse-folder")
+def browse_folder():
+    """Opens a native OS folder picker dialog and returns the selected path."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.wm_attributes('-topmost', True)
+        folder = filedialog.askdirectory(title="Select folder to scan", parent=root)
+        root.destroy()
+        return {"path": folder or None}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not open folder dialog: {e}")
+
 @app.get("/api/folders")
 def get_folders():
     """Returns all unique folder paths currently indexed in the database."""

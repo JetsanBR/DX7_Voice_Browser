@@ -1,0 +1,115 @@
+/* ============================================================================
+   DX7 VOICE BROWSER — DESIGN TOKENS
+   ----------------------------------------------------------------------------
+   Single source of truth for the visual system. Import this FIRST, before
+   static/style.css. Every color, font, space, radius and shadow in the app
+   must reference a token from here — never a raw value.
+
+   Drop-in: this file also re-maps the project's existing legacy variable names
+   (--bg-main, --accent-teal, etc.) onto the new tokens, so the app re-skins
+   the moment this loads, before any markup is touched. Migrate references to
+   the canonical --ds-* names over time.
+   ============================================================================ */
+
+:root {
+  /* ---- NEUTRALS (cool near-black ramp) ---------------------------------- */
+  --ds-bg:          #0a0c0f;   /* app background                            */
+  --ds-sunken:      #08090b;   /* inputs, wells, sunk areas                 */
+  --ds-surface:     #101317;   /* panels, cards                            */
+  --ds-elevated:    #161a1f;   /* hovered rows, raised chips               */
+  --ds-elevated-2:  #1c2228;   /* row hover / active surface               */
+  --ds-border:      #242a31;   /* default 1px hairline                     */
+  --ds-border-2:    #313942;   /* stronger divider / control outline       */
+
+  /* ---- TEXT ------------------------------------------------------------- */
+  --ds-text:        #eaedf0;   /* primary — titles, patch names            */
+  --ds-text-2:      #c0c7cd;   /* secondary — body, cell text              */
+  --ds-text-3:      #97a1aa;   /* muted — descriptions                     */
+  --ds-text-4:      #79828a;   /* faint — captions, paths, placeholders (AA on dark) */
+
+  /* ---- SIGNAL (the one brand accent) ----------------------------------- */
+  --ds-signal:      #2fe3c2;   /* primary action, selection, brand mark    */
+  --ds-signal-ink:  #06231d;   /* text/icon ON a signal-filled surface     */
+  --ds-signal-fill: rgba(47,227,194,0.10);  /* tinted backgrounds          */
+  --ds-signal-line: rgba(47,227,194,0.30);  /* tinted borders              */
+  --ds-signal-ring: rgba(47,227,194,0.12);  /* focus ring                  */
+
+  /* ---- SEMANTIC PATCH TYPES (data only — never decoration) -------------- */
+  --ds-voice:       #2fe3c2;   --ds-voice-fill: rgba(47,227,194,0.10);  --ds-voice-line: rgba(47,227,194,0.30);
+  --ds-perf:        #b58cff;   --ds-perf-fill:  rgba(181,140,255,0.12); --ds-perf-line:  rgba(181,140,255,0.30);
+  --ds-gen2:        #f5b860;   --ds-gen2-fill:  rgba(245,184,96,0.12);  --ds-gen2-line:  rgba(245,184,96,0.30);
+
+  /* ---- STATUS ----------------------------------------------------------- */
+  --ds-success:     #4fe09a;
+  --ds-warning:     #f5b860;
+  --ds-danger:      #ff5a6a;   --ds-danger-fill: rgba(255,90,106,0.10); --ds-danger-line: rgba(255,90,106,0.40);
+
+  /* ---- TYPOGRAPHY ------------------------------------------------------- */
+  --ds-font-ui:   'Space Grotesk', system-ui, -apple-system, sans-serif; /* display + UI */
+  --ds-font-mono: 'JetBrains Mono', ui-monospace, monospace;             /* data, paths, pos, counts */
+
+  /* type scale (px) */
+  --ds-fs-display: 32px;  --ds-fw-display: 600;
+  --ds-fs-title:   24px;  --ds-fw-title:   600;
+  --ds-fs-h3:      17px;  --ds-fw-h3:      600;
+  --ds-fs-body:    16px;  --ds-fw-body:    400;
+  --ds-fs-ui:      14px;  --ds-fw-ui:      500;
+  --ds-fs-sm:      13px;
+  --ds-fs-cap:     12px;  /* mono captions, labels       */
+  --ds-fs-micro:   11px;  /* table header eyebrows ONLY  */
+  /* never go below 11px */
+
+  /* ---- SPACING (4px grid) ---------------------------------------------- */
+  --ds-1: 4px;  --ds-2: 8px;  --ds-3: 12px; --ds-4: 16px;
+  --ds-5: 24px; --ds-6: 32px; --ds-7: 48px; --ds-8: 72px;
+
+  /* ---- RADIUS ---------------------------------------------------------- */
+  --ds-r-ctrl:  6px;   /* buttons, inputs, badges, pills(square)  */
+  --ds-r-card: 10px;   /* cards                                   */
+  --ds-r-panel:14px;   /* large panels, app window                */
+  --ds-r-pill: 999px;  /* filter pills, count chips               */
+
+  /* ---- ELEVATION (one subtle level — NO glow) -------------------------- */
+  --ds-shadow:   0 1px 2px rgba(0,0,0,0.4);
+  --ds-shadow-lg:0 30px 80px -30px rgba(0,0,0,0.8);  /* modals / app window only */
+
+  /* ---- MOTION ---------------------------------------------------------- */
+  --ds-dur: 150ms;
+  --ds-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ========================================================================
+     LEGACY ALIASES — re-point the project's old variable names at the new
+     tokens so static/style.css re-skins immediately. Glows are intentionally
+     neutralized here. Remove these once all references use --ds-* names.
+     ======================================================================== */
+  --bg-main:         var(--ds-bg);
+  --bg-card:         var(--ds-surface);          /* was glassy/translucent */
+  --border-card:     var(--ds-border);
+  --border-hover:    var(--ds-border-2);
+  --accent-teal:     var(--ds-signal);
+  --accent-teal-dark:var(--ds-signal-fill);
+  --accent-teal-glow:transparent;                /* kill glow */
+  --accent-red:      var(--ds-danger);
+  --accent-red-glow: transparent;
+  --accent-red-hover:var(--ds-danger);
+  --lcd-bg:          var(--ds-sunken);
+  --lcd-text:        var(--ds-signal);
+  --lcd-text-dim:    var(--ds-text-4);
+  --text-primary:    var(--ds-text);
+  --text-secondary:  var(--ds-text-3);
+  --text-muted:      var(--ds-text-4);
+  --shadow-glow:     var(--ds-shadow);           /* was a glow */
+  --shadow-lcd:      inset 0 0 0 1px var(--ds-border);
+  --transition-speed:var(--ds-dur);
+  --font-mono:       var(--ds-font-mono);
+  --font-display:    var(--ds-font-ui);
+}
+
+/* Respect reduced-motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

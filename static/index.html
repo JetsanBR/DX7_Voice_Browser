@@ -1,122 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yamaha DX7 Voice Browser</title>
-    <!-- Google Fonts: Inter for UI, Orbitron & Share Tech Mono for Retro-LCD displays -->
+    <!-- Google Fonts: Space Grotesk (UI/display) + JetBrains Mono (data) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- App Stylesheet -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="tokens.css">
 </head>
-<body>
-    <div class="glow-orb-1"></div>
-    <div class="glow-orb-2"></div>
 
+<body>
     <div class="container">
-        <!-- Header & Brand -->
-        <header class="app-header">
+        <!-- App Bar: brand + inline scan command + status -->
+        <header class="app-bar">
             <div class="brand">
-                <span class="dx7-badge">DX7 / DX7S</span>
-                <h1>YAMAHA <span class="accent-text">VOICE BROWSER</span></h1>
-                <p class="subtitle">MIDI System Exclusive (SysEx) Bank Librarian & Locator</p>
-            </div>
-            
-            <!-- Virtual Retro LCD Display Panel -->
-            <div class="lcd-panel">
-                <div class="lcd-scanlines"></div>
-                <div class="lcd-grid">
-                    <div class="lcd-row">
-                        <span class="lcd-label">SYS STATUS:</span>
-                        <span class="lcd-value status-idle" id="lcd-status">READY</span>
-                    </div>
-                    <div class="lcd-row">
-                        <span class="lcd-label">TOTAL VOICES:</span>
-                        <span class="lcd-value" id="lcd-total-voices">000000</span>
-                    </div>
-                    <div class="lcd-row">
-                        <span class="lcd-label">ACTIVE FILE:</span>
-                        <span class="lcd-value scroll-text" id="lcd-active-file">NONE</span>
-                    </div>
-                    <div class="lcd-row">
-                        <span class="lcd-label">PROGRESS:</span>
-                        <span class="lcd-value" id="lcd-progress">0% [------]</span>
-                    </div>
+                <div class="brand-mark">DX</div>
+                <div class="brand-text">
+                    <div class="brand-name">DX7 VOICE BROWSER</div>
+                    <div class="brand-sub">SysEx Bank Librarian</div>
                 </div>
+            </div>
+
+            <div class="scan-command">
+                <div class="input-wrapper">
+                    <i class="fa-regular fa-folder-open input-icon" aria-hidden="true"></i>
+                    <input type="text" id="dir-input" placeholder="C:\Users\sandr\Music\DX7_Patches" spellcheck="false" aria-label="Target scan directory (absolute Windows path)">
+                </div>
+                <button id="browse-btn" class="btn-icon" title="Browse for folder" aria-label="Browse for folder">
+                    <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                </button>
+                <button id="scan-btn" class="btn btn-primary">
+                    <span id="scan-btn-text"><i class="fa-solid fa-radar" aria-hidden="true"></i> SCAN</span>
+                    <span id="scan-spinner" class="spinner hidden"></span>
+                </button>
+            </div>
+
+            <div class="status-inline">
+                <span id="lcd-status" class="status-idle">READY</span>
+                <span class="status-count"><strong id="lcd-total-voices">0</strong> VOICES</span>
+                <button id="clear-btn" class="btn-icon btn-icon-danger" title="Clear database" aria-label="Clear database">
+                    <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                </button>
             </div>
         </header>
 
-        <!-- Command Deck: Scan & Controls -->
-        <section class="command-deck card">
-            <div class="deck-title">
-                <i class="fa-solid fa-square-poll-horizontal"></i>
-                <h2>LIBRARIAN CONTROL PANEL</h2>
+        <!-- Scanning Progress Bar -->
+        <div id="progress-container" class="progress-container hidden">
+            <div class="progress-info">
+                <span id="progress-filename">Reading file: </span>
+                <span id="progress-ratio">0 / 0 files</span>
             </div>
-            
-            <div class="scan-form">
-                <div class="input-group">
-                    <label for="dir-input">Target Scan Directory (Absolute Windows Path)</label>
-                    <div class="input-with-button">
-                        <div class="input-wrapper">
-                            <i class="fa-regular fa-folder-open input-icon"></i>
-                            <input type="text" id="dir-input" placeholder="e.g., C:\Users\sandr\Music\DX7_Patches" spellcheck="false">
-                        </div>
-                        <button id="scan-btn" class="btn btn-primary">
-                            <span id="scan-btn-text"><i class="fa-solid fa-radar"></i> SCAN</span>
-                            <span id="scan-spinner" class="spinner hidden"></span>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="deck-actions">
-                    <button id="clear-btn" class="btn btn-danger">
-                        <i class="fa-regular fa-trash-can"></i> CLEAR DATABASE
-                    </button>
-                </div>
+            <div class="progress-bar-bg">
+                <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
             </div>
-            
-            <!-- Scanning Progress Bar -->
-            <div id="progress-container" class="progress-container hidden">
-                <div class="progress-info">
-                    <span id="progress-filename">Reading file: </span>
-                    <span id="progress-ratio">0 / 0 files</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
-                </div>
-            </div>
-        </section>
+        </div>
 
         <!-- Section Tab Bar -->
         <div class="tab-bar" role="tablist">
-            <button class="tab-btn active" id="tab-explorer" role="tab" aria-selected="true" aria-controls="section-explorer">
-                <i class="fa-solid fa-wave-square"></i> PATCH EXPLORER
+            <button class="tab-btn active" id="tab-explorer" role="tab" aria-selected="true"
+                aria-controls="section-explorer">
+                <i class="fa-solid fa-wave-square" aria-hidden="true"></i> PATCH EXPLORER
             </button>
             <button class="tab-btn" id="tab-cleanup" role="tab" aria-selected="false" aria-controls="section-cleanup">
-                <i class="fa-solid fa-broom"></i> CLEANUP
+                <i class="fa-solid fa-broom" aria-hidden="true"></i> CLEANUP
             </button>
         </div>
 
         <!-- Voice Search & Explorer Dashboard -->
         <main class="voice-explorer card" id="section-explorer" role="tabpanel">
-            <!-- Header: title + tree toggle + search -->
+            <!-- Toolbar: tree toggle + search -->
             <div class="explorer-header">
-                <div class="explorer-title">
-                    <i class="fa-solid fa-wave-square"></i>
-                    <h2>PATCH EXPLORER</h2>
-                </div>
-                <button id="tree-toggle-btn" class="btn-icon" title="Toggle folder tree" aria-expanded="true">
-                    <i class="fa-solid fa-folder-tree"></i>
+                <button id="tree-toggle-btn" class="btn-icon active" title="Toggle folder tree" aria-expanded="true">
+                    <i class="fa-solid fa-folder-tree" aria-hidden="true"></i>
                 </button>
                 <div class="filters">
                     <div class="search-wrapper">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input type="text" id="search-input" placeholder="Type patch name to filter dynamically..." autocomplete="off">
-                        <button id="clear-search-btn" class="clear-search-btn" aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button>
+                        <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                        <input type="text" id="search-input" placeholder="Filter patches…" autocomplete="off" aria-label="Filter patches by name">
+                        <button id="clear-search-btn" class="clear-search-btn" aria-label="Clear search"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                     </div>
                 </div>
             </div>
@@ -125,13 +93,13 @@
             <div class="type-tab-bar">
                 <button class="type-tab active" data-type="">ALL</button>
                 <button class="type-tab" data-type="Voice">
-                    <i class="fa-solid fa-wave-square"></i> VOICE
+                    <i class="fa-solid fa-wave-square" aria-hidden="true"></i> VOICE
                 </button>
                 <button class="type-tab" data-type="Performance">
-                    <i class="fa-solid fa-layer-group"></i> PERFORMANCE
+                    <i class="fa-solid fa-layer-group" aria-hidden="true"></i> PERFORMANCE
                 </button>
                 <button class="type-tab" data-type="Gen 2 Extended">
-                    <i class="fa-solid fa-sliders"></i> GEN 2 EXT
+                    <i class="fa-solid fa-sliders" aria-hidden="true"></i> GEN 2 EXT
                 </button>
             </div>
 
@@ -139,7 +107,7 @@
             <div class="explorer-body">
                 <aside class="folder-tree-panel" id="folder-tree-panel">
                     <div class="tree-header">
-                        <i class="fa-solid fa-folder-tree"></i>
+                        <i class="fa-solid fa-folder-tree" aria-hidden="true"></i>
                         <span>FOLDERS</span>
                     </div>
                     <div id="folder-tree-root" class="folder-tree"></div>
@@ -152,7 +120,7 @@
                     </div>
 
                     <div id="empty-state" class="empty-state">
-                        <i class="fa-solid fa-compact-disc empty-icon"></i>
+                        <i class="fa-solid fa-compact-disc empty-icon" aria-hidden="true"></i>
                         <h3>No patches found in database</h3>
                         <p>Enter a target directory above and run a SCAN to catalog your Yamaha .syx files.</p>
                     </div>
@@ -163,13 +131,13 @@
                         <table class="voices-table hidden" id="voices-table">
                             <thead>
                                 <tr>
-                                    <th class="col-name" data-sort="name">Patch Name <i class="fa-solid fa-sort"></i></th>
-                                    <th class="col-type">Type</th>
-                                    <th class="col-pos" data-sort="pos">Pos <i class="fa-solid fa-sort"></i></th>
-                                    <th class="col-file" data-sort="file">Sysex File <i class="fa-solid fa-sort"></i></th>
-                                    <th class="col-path">Folder Path</th>
-                                    <th class="col-files" data-sort="files">Files <i class="fa-solid fa-sort"></i></th>
-                                    <th class="col-actions">Action</th>
+                                    <th scope="col" class="col-name" data-sort="name" tabindex="0" aria-label="Sort by patch name">Patch Name <i class="fa-solid fa-sort" aria-hidden="true"></i></th>
+                                    <th scope="col" class="col-type">Type</th>
+                                    <th scope="col" class="col-pos" data-sort="pos" tabindex="0" aria-label="Sort by position">Pos <i class="fa-solid fa-sort" aria-hidden="true"></i></th>
+                                    <th scope="col" class="col-file" data-sort="file" tabindex="0" aria-label="Sort by file">Sysex File <i class="fa-solid fa-sort" aria-hidden="true"></i></th>
+                                    <th scope="col" class="col-path">Folder Path</th>
+                                    <th scope="col" class="col-files" data-sort="files" tabindex="0" aria-label="Sort by file count">Files <i class="fa-solid fa-sort" aria-hidden="true"></i></th>
+                                    <th scope="col" class="col-actions">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="voices-tbody">
@@ -182,45 +150,46 @@
         </main>
 
         <!-- Cleanup Section -->
-    <section class="cleanup-section card hidden" id="section-cleanup" role="tabpanel">
-        <div class="cleanup-header">
-            <div class="explorer-title">
-                <i class="fa-solid fa-broom"></i>
-                <h2>DUPLICATE FOLDER CLEANUP</h2>
+        <section class="cleanup-section card hidden" id="section-cleanup" role="tabpanel">
+            <div class="cleanup-header">
+                <div class="explorer-title">
+                    <i class="fa-solid fa-broom" aria-hidden="true"></i>
+                    <h2>DUPLICATE FOLDER CLEANUP</h2>
+                </div>
+                <button id="find-duplicates-btn" class="btn btn-primary">
+                    <span id="find-dup-btn-text"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> FIND DUPLICATES</span>
+                    <span id="find-dup-spinner" class="spinner hidden"></span>
+                </button>
             </div>
-            <button id="find-duplicates-btn" class="btn btn-primary">
-                <span id="find-dup-btn-text"><i class="fa-solid fa-magnifying-glass"></i> FIND DUPLICATES</span>
-                <span id="find-dup-spinner" class="spinner hidden"></span>
-            </button>
-        </div>
 
-        <div id="dup-loading" class="loading-state hidden">
-            <div class="retro-loader"></div>
-            <p>Analyzing folder fingerprints...</p>
-        </div>
+            <div id="dup-loading" class="loading-state hidden">
+                <div class="retro-loader"></div>
+                <p>Analyzing folder fingerprints...</p>
+            </div>
 
-        <div id="dup-empty" class="empty-state hidden">
-            <i class="fa-solid fa-circle-check empty-icon" style="color: hsl(150,100%,40%)"></i>
-            <h3>No duplicate folders found</h3>
-            <p>All scanned folders contain unique sets of .syx files.</p>
-        </div>
+            <div id="dup-empty" class="empty-state hidden">
+                <i class="fa-solid fa-circle-check empty-icon" aria-hidden="true" style="color: var(--ds-success)"></i>
+                <h3>No duplicate folders found</h3>
+                <p>All scanned folders contain unique sets of .syx files.</p>
+            </div>
 
-        <div id="dup-initial" class="empty-state">
-            <i class="fa-solid fa-broom empty-icon"></i>
-            <h3>Find Duplicate Folders</h3>
-            <p>Click FIND DUPLICATES to identify folders with identical .syx file sets.</p>
-        </div>
+            <div id="dup-initial" class="empty-state">
+                <i class="fa-solid fa-broom empty-icon" aria-hidden="true"></i>
+                <h3>Find Duplicate Folders</h3>
+                <p>Click FIND DUPLICATES to identify folders with identical .syx file sets.</p>
+            </div>
 
-        <div id="dup-groups-container" class="dup-groups-container"></div>
-    </section>
+            <div id="dup-groups-container" class="dup-groups-container"></div>
+        </section>
     </div>
 
     <!-- Duplicate Files Modal -->
-    <div id="files-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div id="files-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true"
+        aria-labelledby="modal-title">
         <div class="modal-panel">
             <div class="modal-header">
                 <div class="modal-title-row">
-                    <i class="fa-solid fa-copy"></i>
+                    <i class="fa-solid fa-copy" aria-hidden="true"></i>
                     <h2 id="modal-title">DUPLICATE FILES</h2>
                 </div>
                 <div id="modal-voice-name" class="modal-voice-name"></div>
@@ -234,7 +203,7 @@
             </div>
             <div class="modal-footer">
                 <button id="modal-close-btn" class="btn btn-primary">
-                    <i class="fa-solid fa-xmark"></i> CLOSE
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i> CLOSE
                 </button>
             </div>
         </div>
@@ -249,4 +218,5 @@
     <!-- Script inclusion -->
     <script src="app.js" defer></script>
 </body>
+
 </html>

@@ -21,6 +21,7 @@ let expandedNodes = new Set();
 
 // DOM Elements
 const dirInput = document.getElementById('dir-input');
+const browseBtn = document.getElementById('browse-btn');
 const scanBtn = document.getElementById('scan-btn');
 const scanBtnText = document.getElementById('scan-btn-text');
 const scanSpinner = document.getElementById('scan-spinner');
@@ -86,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     // Scan Button
     scanBtn.addEventListener('click', handleScanTrigger);
+    browseBtn.addEventListener('click', handleBrowseFolder);
     
     // Clear Database Button
     clearBtn.addEventListener('click', handleClearDatabase);
@@ -94,11 +96,12 @@ function setupEventListeners() {
     searchInput.addEventListener('input', handleSearchInput);
     clearSearchBtn.addEventListener('click', clearSearch);
     
-    // Table Header Sorting
+    // Table Header Sorting (mouse + keyboard)
     tableHeaders.forEach(th => {
-        th.addEventListener('click', () => {
-            const sortKey = th.getAttribute('data-sort');
-            handleSort(sortKey);
+        const doSort = () => handleSort(th.getAttribute('data-sort'));
+        th.addEventListener('click', doSort);
+        th.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); doSort(); }
         });
     });
 
@@ -121,7 +124,18 @@ function setupEventListeners() {
         if (e.target === filesModalOverlay) closeFilesModal();
     });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeFilesModal();
+        if (e.key === 'Escape' && !filesModalOverlay.classList.contains('hidden')) closeFilesModal();
+    });
+
+    // Modal focus trap (keep Tab within the dialog while open)
+    filesModalOverlay.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const focusable = [...filesModalOverlay.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])')]
+            .filter(el => !el.disabled && el.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     });
 
     // Cleanup polling interval when page is unloaded
@@ -170,6 +184,20 @@ async function loadVoices(query = '') {
         showToast(e.message, 'error');
     } finally {
         showLoading(false);
+    }
+}
+
+// Open native OS folder picker and populate the directory input
+async function handleBrowseFolder() {
+    try {
+        const response = await fetch('/api/browse-folder');
+        if (!response.ok) throw new Error('Browse dialog failed.');
+        const data = await response.json();
+        if (data.path) {
+            dirInput.value = data.path;
+        }
+    } catch (e) {
+        showToast('Could not open folder browser.', 'error');
     }
 }
 
@@ -295,8 +323,10 @@ async function showFilesModal(voiceName, patchType) {
     modalVoiceName.textContent = voiceName;
     modalList.innerHTML = '';
     modalLoading.classList.remove('hidden');
+    filesModalOverlay._lastFocus = document.activeElement;
     filesModalOverlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    setTimeout(() => modalCloseBtn.focus(), 0);
 
     try {
         const params = new URLSearchParams({ name: voiceName });
@@ -369,6 +399,10 @@ function renderModalList(files) {
 function closeFilesModal() {
     filesModalOverlay.classList.add('hidden');
     document.body.style.overflow = '';
+    if (filesModalOverlay._lastFocus) {
+        filesModalOverlay._lastFocus.focus();
+        filesModalOverlay._lastFocus = null;
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -415,9 +449,11 @@ function handleSort(key) {
         if (th.getAttribute('data-sort') === key) {
             icon.className = currentSort.asc ? 'fa-solid fa-sort-up' : 'fa-solid fa-sort-down';
             th.classList.add('active-sort');
+            th.setAttribute('aria-sort', currentSort.asc ? 'ascending' : 'descending');
         } else {
             icon.className = 'fa-solid fa-sort';
             th.classList.remove('active-sort');
+            th.removeAttribute('aria-sort');
         }
     });
     
@@ -583,39 +619,23 @@ function setScanButtonState(disabled) {
 }
 
 function updateLcdVoicesCount(count) {
-    lcdTotalVoices.textContent = String(count).padStart(6, '0');
+    lcdTotalVoices.textContent = (count || 0).toLocaleString();
 }
 
 function updateLcd(state) {
-    // 1. Status
+    // Status pill (drives the dot color via the status-* class)
     if (state.status === 'scanning') {
         lcdStatus.textContent = "SCANNING";
-        lcdStatus.className = "lcd-value status-scanning";
+        lcdStatus.className = "status-scanning";
     } else {
         lcdStatus.textContent = "READY";
-        lcdStatus.className = "lcd-value status-idle";
+        lcdStatus.className = "status-idle";
     }
-    
-    // 2. Voices Count
+
+    // Voice count
     updateLcdVoicesCount(state.voices_found);
-    
-    // 3. Active File
-    if (state.status === 'scanning' && state.current_file) {
-        lcdActiveFile.textContent = state.current_file;
-    } else {
-        lcdActiveFile.textContent = "NONE";
-    }
-    
-    // 4. Progress Text
-    if (state.status === 'scanning' && state.total_files > 0) {
-        const pct = Math.round((state.files_scanned / state.total_files) * 100);
-        const barLen = 6;
-        const filledLen = Math.round((state.files_scanned / state.total_files) * barLen);
-        const barStr = "#".repeat(filledLen) + "-".repeat(barLen - filledLen);
-        lcdProgress.textContent = `${pct}% [${barStr}]`;
-    } else {
-        lcdProgress.textContent = "0% [------]";
-    }
+
+    // Active file + progress now surface in the progress bar (see updateProgressBar)
 }
 
 function updateProgressBar(state) {
@@ -742,7 +762,10 @@ function renderFolderTree(node, container, depth) {
     // Chevron button (stops click from bubbling to row)
     const chevronBtn = document.createElement('button');
     chevronBtn.className = 'tree-chevron-btn';
-    chevronBtn.innerHTML = `<i class="fa-solid fa-chevron-right tree-chevron${isExpanded ? ' open' : ''}${!hasChildren ? ' tree-chevron-hidden' : ''}"></i>`;
+    chevronBtn.type = 'button';
+    chevronBtn.setAttribute('aria-label', 'Expand or collapse folder');
+    if (!hasChildren) chevronBtn.tabIndex = -1;
+    chevronBtn.innerHTML = `<i class="fa-solid fa-chevron-right tree-chevron${isExpanded ? ' open' : ''}${!hasChildren ? ' tree-chevron-hidden' : ''}" aria-hidden="true"></i>`;
     if (hasChildren) {
         chevronBtn.addEventListener('click', e => {
             e.stopPropagation();
@@ -751,10 +774,12 @@ function renderFolderTree(node, container, depth) {
                 expandedNodes.delete(nodeKey);
                 chevronBtn.querySelector('.tree-chevron').classList.remove('open');
                 childrenEl.classList.add('hidden');
+                row.setAttribute('aria-expanded', 'false');
             } else {
                 expandedNodes.add(nodeKey);
                 chevronBtn.querySelector('.tree-chevron').classList.add('open');
                 childrenEl.classList.remove('hidden');
+                row.setAttribute('aria-expanded', 'true');
             }
         });
     }
@@ -772,8 +797,17 @@ function renderFolderTree(node, container, depth) {
     row.appendChild(icon);
     row.appendChild(label);
 
-    // Row click: select/deselect this folder
+    // Keyboard + ARIA
+    row.setAttribute('role', 'button');
+    row.tabIndex = 0;
+    row.setAttribute('aria-label', node.fullPath ? node.name : 'All folders');
+    if (hasChildren) row.setAttribute('aria-expanded', String(isExpanded));
+
+    // Row click / keyboard: select/deselect this folder
     row.addEventListener('click', () => selectTreeFolder(node.fullPath));
+    row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTreeFolder(node.fullPath); }
+    });
 
     container.appendChild(row);
 
@@ -1007,16 +1041,16 @@ function showToast(message, type = 'info') {
     // Set Icon and style based on type
     if (type === 'success') {
         toastIcon.className = 'fa-solid fa-circle-check';
-        toast.style.borderColor = 'hsl(150, 100%, 40%)';
-        toastIcon.style.color = 'hsl(150, 100%, 45%)';
+        toast.style.borderColor = 'var(--ds-success)';
+        toastIcon.style.color = 'var(--ds-success)';
     } else if (type === 'error') {
         toastIcon.className = 'fa-solid fa-circle-exclamation';
-        toast.style.borderColor = 'var(--accent-red)';
-        toastIcon.style.color = 'var(--accent-red)';
+        toast.style.borderColor = 'var(--ds-danger)';
+        toastIcon.style.color = 'var(--ds-danger)';
     } else {
         toastIcon.className = 'fa-solid fa-circle-info';
-        toast.style.borderColor = 'var(--accent-teal)';
-        toastIcon.style.color = 'var(--accent-teal)';
+        toast.style.borderColor = 'var(--ds-signal)';
+        toastIcon.style.color = 'var(--ds-signal)';
     }
     
     toast.classList.remove('hidden');
