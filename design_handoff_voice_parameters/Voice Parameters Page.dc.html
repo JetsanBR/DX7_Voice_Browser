@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  html,body{margin:0;background:#1a1d22;}
+  *{box-sizing:border-box;}
+  .vp-wrap{padding:36px;display:flex;justify-content:center;}
+</style>
+</helmet>
+<div class="vp-wrap">
+<div class="dv-card" style="width:1200px;background:#0a0c0f;border:1px solid #242a31;border-radius:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);">
+
+        <div style="display:flex;align-items:center;gap:22px;padding:22px 30px;background:#101317;border-bottom:1px solid #1c2127;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:13px;">
+            <div style="width:38px;height:38px;border-radius:8px;background:#2fe3c2;display:flex;align-items:center;justify-content:center;color:#06231d;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">DX</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:23px;font-weight:600;letter-spacing:-.01em;margin:0;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">MELLOW HORN</h1>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.04em;color:#2fe3c2;background:rgba(47,227,194,0.10);border:1px solid rgba(47,227,194,0.3);padding:3px 8px;border-radius:6px;"><i class="fa-solid fa-wave-square" style="font-size:9px;"></i> VOICE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.04em;margin-top:4px;">ROM1A.SYX · POS 01 · ALG 2</div>
+            </div>
+          </div>
+          <div style="position:relative;width:80px;height:56px;flex-shrink:0;">
+            <sc-for list="{{ algNodes }}" as="n" hint-placeholder-count="6">
+              <div style="position:absolute;width:20px;height:20px;top:{{ n.top }};left:{{ n.left }};border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;background:{{ n.bg }};border:1px solid {{ n.border }};color:{{ n.color }};">{{ n.num }}</div>
+            </sc-for>
+            <sc-for list="{{ algLines }}" as="ln" hint-placeholder-count="3">
+              <div style="position:absolute;width:1px;height:14px;top:{{ ln.top }};left:{{ ln.left }};background:#313942;"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;margin-left:auto;border-left:1px solid #1c2127;">
+            <sc-for list="{{ keyStats }}" as="s" hint-placeholder-count="6">
+              <div style="padding:2px 16px;border-right:1px solid #1c2127;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:3px;">{{ s.l }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c7cdd2;font-weight:600;">{{ s.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:34px 30px 0;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">01</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Operators</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:38px;">
+            <sc-for list="{{ operators }}" as="op" hint-placeholder-count="6">
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:{{ op.dotColor }};flex-shrink:0;"></span>
+                    OP{{ op.num }}
+                    <sc-if value="{{ op.feedback }}" hint-placeholder-val="{{ false }}"><i class="fa-solid fa-rotate-right" style="font-size:9px;color:#2fe3c2;"></i></sc-if>
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;">{{ op.tag }}</span>
+                </div>
+                <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:6px 8px 2px;margin-bottom:12px;">{{ op.egFill }}</div>
+                <div style="margin-bottom:12px;">
+                  <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.06em;margin-bottom:5px;"><span>OUTPUT LEVEL</span><span style="color:#c0c7cd;">{{ op.level }}</span></div>
+                  <div style="height:7px;background:#0b0d10;border:1px solid #1c2127;border-radius:4px;overflow:hidden;"><div style="height:100%;width:{{ op.meterPct }};background:#2fe3c2;"></div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;">
+                  <span style="color:#5a636b;">EG-R</span><span style="color:#c0c7cd;text-align:right;">{{ op.egRStr }}</span>
+                  <span style="color:#5a636b;">EG-L</span><span style="color:#c0c7cd;text-align:right;">{{ op.egLStr }}</span>
+                </div>
+                <div style="border-top:1px solid #1c2127;margin-top:10px;padding-top:9px;display:flex;flex-direction:column;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#79828a;">
+                  <div>{{ op.oscLine }} · RS {{ op.rateScaling }}</div>
+                  <div>{{ op.scalingLine }}</div>
+                  <div>{{ op.sensLine }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:0 30px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">02</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Modulation</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ lfoGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ lfoGroup.title }}</span>
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">TRIANGLE</span>
+              </div>
+              <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:12px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;">{{ lfoWave }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;">
+                <sc-for list="{{ lfoGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:12px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid fa-chart-line" style="color:#b58cff;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Pitch EG</span>
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">RANGE {{ pitchEG.range }}</span>
+              </div>
+              <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:10px 12px 4px;margin-bottom:14px;">{{ pitchEG.svgFill }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px 24px;font-family:'JetBrains Mono',monospace;font-size:11.5px;">
+                <span style="color:#5a636b;">RATES <span style="color:#c0c7cd;">{{ pitchEG.ratesStr }}</span></span>
+                <span style="color:#5a636b;">LEVELS <span style="color:#c0c7cd;">{{ pitchEG.levelsStr }}</span></span>
+                <span style="color:#5a636b;">VELOCITY <span style="color:#c0c7cd;">{{ pitchEG.velocity }}</span></span>
+                <span style="color:#5a636b;">RATE SCL <span style="color:#c0c7cd;">{{ pitchEG.rateScaling }}</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 30px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">03</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Key Mode, Pitch Bend &amp; Portamento</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ keyModeGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ keyModeGroup.title }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ keyModeGroup.rows }}" as="row" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ pitchBendGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ pitchBendGroup.title }}</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                <sc-for list="{{ pitchBendGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 30px 38px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">04</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Controllers</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersA.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersA.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersA.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersA.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersB.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersB.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersB.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersB.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;">{{ controllersB.note }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const bar = (v, max) => Math.round((v/99)*max) + 'px';
+
+    const _e = React.createElement;
+    // DX7-style 4-rate / 4-level envelope drawn as an SVG contour: L4→R1→L1→R2→L2→R3→L3(sustain)→KEY OFF→R4→L4
+    const envSvg = (rates, levels, o) => {
+      o = o || {};
+      const W = o.W || 320, H = o.H || 78, stroke = o.stroke || '#2fe3c2', sw = o.sw || 1.75;
+      const padT = o.labels ? 18 : 8, padB = o.keyText ? 18 : 12;
+      const padL = o.labels ? 20 : 6, padR = o.labels ? 20 : 6;
+      const x0 = padL, x1 = W - padR, yTop = padT, yBot = H - padB;
+      const yOf = (lv) => yBot - (lv / 99) * (yBot - yTop);
+      const L1 = levels[0], L2 = levels[1], L3 = levels[2], L4 = levels[3];
+      const R1 = rates[0], R2 = rates[1], R3 = rates[2], R4 = rates[3];
+      const t1 = Math.abs(L1 - L4) / Math.max(R1, 3);
+      const t2 = Math.abs(L2 - L1) / Math.max(R2, 3);
+      const t3 = Math.abs(L3 - L2) / Math.max(R3, 3);
+      const preSum = (t1 + t2 + t3) || 1, innerW = x1 - x0;
+      const preW = innerW * 0.54, susW = innerW * 0.16, relW = innerW * 0.30;
+      const w1 = preW * t1 / preSum, w2 = preW * t2 / preSum, w3 = preW * t3 / preSum;
+      const P = [[x0, yOf(L4)], [x0 + w1, yOf(L1)], [x0 + w1 + w2, yOf(L2)], [x0 + w1 + w2 + w3, yOf(L3)]];
+      const keyOffX = P[3][0] + susW;
+      P.push([keyOffX, yOf(L3)]);
+      P.push([keyOffX + relW, yOf(L4)]);
+      const rnd = (n) => Math.round(n * 10) / 10;
+      const pts = P.map(p => rnd(p[0]) + ',' + rnd(p[1])).join(' ');
+      const k = [];
+      if (o.grid) { for (let i = 0; i < 4; i++) { const y = yTop + i * ((yBot - yTop) / 3); k.push(_e('line', { key: 'g' + i, x1: padL - 2, y1: y, x2: W - padR + 2, y2: y, stroke: '#1c2127', strokeWidth: 1 })); } }
+      if (o.keys) {
+        k.push(_e('line', { key: 'kon', x1: P[0][0], y1: yTop, x2: P[0][0], y2: yBot, stroke: '#3a434c', strokeWidth: 1, strokeDasharray: '2 3', vectorEffect: 'non-scaling-stroke' }));
+        k.push(_e('line', { key: 'koff', x1: keyOffX, y1: yTop, x2: keyOffX, y2: yBot, stroke: '#3a434c', strokeWidth: 1, strokeDasharray: '2 3', vectorEffect: 'non-scaling-stroke' }));
+      }
+      k.push(_e('line', { key: 'base', x1: 0, y1: yBot, x2: W, y2: yBot, stroke: '#242a31', strokeWidth: 1 }));
+      if (o.fill) { const area = pts + ' ' + rnd(P[5][0]) + ',' + yBot + ' ' + rnd(P[0][0]) + ',' + yBot; k.push(_e('polygon', { key: 'fill', points: area, fill: o.fill, stroke: 'none' })); }
+      k.push(_e('polyline', { key: 'ln', points: pts, fill: 'none', stroke: stroke, strokeWidth: sw, strokeLinejoin: 'round', strokeLinecap: 'round', vectorEffect: 'non-scaling-stroke' }));
+      const dot = (p, key) => _e('circle', { key: key, cx: rnd(p[0]), cy: rnd(p[1]), r: o.labels ? 2.4 : 1.9, fill: stroke });
+      k.push(dot(P[1], 'd1'), dot(P[2], 'd2'), dot(P[3], 'd3'));
+      if (o.labels) {
+        const tf = 'JetBrains Mono, monospace', tc = '#8a929b';
+        const T = (x, y, s, a) => _e('text', { key: 't_' + s + '_' + Math.round(x) + '_' + Math.round(y), x: rnd(x), y: rnd(y), fontSize: 9, fill: tc, fontFamily: tf, textAnchor: a || 'middle' }, s);
+        k.push(T(P[1][0], P[1][1] - 6, 'L1'));
+        k.push(T(P[2][0], P[2][1] - 6, 'L2'));
+        k.push(T(P[3][0], P[3][1] - 6, 'L3'));
+        k.push(T(P[0][0], P[0][1] - 6, 'L4', 'start'));
+        k.push(T(P[5][0], P[5][1] - 6, 'L4', 'end'));
+        k.push(T((P[0][0] + P[1][0]) / 2 - 5, (P[0][1] + P[1][1]) / 2, 'R1', 'end'));
+        k.push(T((P[1][0] + P[2][0]) / 2 + 5, (P[1][1] + P[2][1]) / 2, 'R2', 'start'));
+        k.push(T((P[2][0] + P[3][0]) / 2, (P[2][1] + P[3][1]) / 2 - 5, 'R3'));
+        k.push(T((P[4][0] + P[5][0]) / 2 + 4, (P[4][1] + P[5][1]) / 2, 'R4', 'start'));
+      }
+      if (o.keyText) {
+        const tf = 'JetBrains Mono, monospace';
+        k.push(_e('text', { key: 'kont', x: P[0][0], y: H - 4, fontSize: 8.5, fill: '#5a636b', fontFamily: tf, textAnchor: 'start' }, 'KEY ON'));
+        k.push(_e('text', { key: 'kofft', x: keyOffX, y: H - 4, fontSize: 8.5, fill: '#5a636b', fontFamily: tf, textAnchor: 'middle' }, 'KEY OFF'));
+      }
+      return _e('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: H, preserveAspectRatio: 'none', style: { display: 'block', overflow: 'visible' } }, k);
+    };
+
+    const waveSvg = (shape, o) => {
+      o = o || {};
+      const W = o.W || 120, H = o.H || 44, stroke = o.stroke || '#2fe3c2', sw = o.sw || 1.75;
+      const midY = H / 2, amp = H / 2 - 6, cyc = 2, seg = W / (cyc * 2);
+      let pts = [];
+      if (/tri/i.test(shape)) { for (let i = 0; i <= cyc * 2; i++) { pts.push([i * seg, i % 2 === 0 ? midY + amp : midY - amp]); } }
+      else if (/saw/i.test(shape)) { for (let i = 0; i < cyc; i++) { pts.push([i * seg * 2, midY + amp]); pts.push([(i + 1) * seg * 2 - 0.5, midY - amp]); pts.push([(i + 1) * seg * 2, midY + amp]); } }
+      else if (/squ/i.test(shape)) { let up = false; for (let i = 0; i <= cyc * 2; i++) { const x = i * seg; pts.push([x, up ? midY - amp : midY + amp]); pts.push([x, up ? midY + amp : midY - amp]); up = !up; } }
+      else { for (let i = 0; i <= 48; i++) { const x = W * i / 48; const y = midY - Math.sin((i / 48) * Math.PI * 2 * cyc) * amp; pts.push([x, y]); } }
+      const rnd = (n) => Math.round(n * 10) / 10;
+      const s = pts.map(p => rnd(p[0]) + ',' + rnd(p[1])).join(' ');
+      return _e('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, preserveAspectRatio: 'none', style: { display: 'block' } }, [
+        _e('polyline', { key: 'w', points: s, fill: 'none', stroke: stroke, strokeWidth: sw, strokeLinejoin: 'round', strokeLinecap: 'round', vectorEffect: 'non-scaling-stroke' })
+      ]);
+    };
+
+    const keyStats = [
+      { l:'ALGORITHM', v:'2' },
+      { l:'FEEDBACK', v:'7' },
+      { l:'OSC SYNC', v:'On' },
+      { l:'TRANSPOSE', v:'C2' },
+      { l:'KEY MODE', v:'Poly' },
+      { l:'P.MOD SENS', v:'2' },
+    ];
+
+    const algNodes = [
+      { num:6, top:'0px',  left:'0px',  bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:5, top:'0px',  left:'33px', bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:4, top:'0px',  left:'66px', bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:3, top:'38px', left:'0px',  bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:2, top:'38px', left:'33px', bg:'rgba(47,227,194,0.12)', border:'#2fe3c2', color:'#2fe3c2', fb:true, scaled:true },
+      { num:1, top:'38px', left:'66px', bg:'rgba(47,227,194,0.12)', border:'#2fe3c2', color:'#2fe3c2', fb:false, scaled:true },
+    ];
+    const algLines = [ { top:'22px', left:'10px' }, { top:'22px', left:'43px' }, { top:'22px', left:'76px' } ];
+
+    const opsRaw = [
+      { num:1, tag:'Carrier',   feedback:false, mode:'Ratio', coarse:'1.00',  fine:'1.00', detune:0,  rateScaling:2, egR:[54,35,19,60], egL:[99,97,94,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/0',  level:97, keyVel:1, amSens:0 },
+      { num:2, tag:'Carrier',   feedback:true,  mode:'Ratio', coarse:'1.00',  fine:'0.02', detune:3,  rateScaling:2, egR:[58,39,22,58], egL:[92,88,90,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/12', level:88, keyVel:2, amSens:0 },
+      { num:3, tag:'Modulator', feedback:false, mode:'Ratio', coarse:'2.00',  fine:'0.00', detune:-2, rateScaling:3, egR:[70,45,30,65], egL:[70,60,55,0],  scalingMode:'Normal',     detail:'BP C3 · L -LIN/0 · R -EXP/30',  level:62, keyVel:3, amSens:1 },
+      { num:4, tag:'Modulator', feedback:false, mode:'Ratio', coarse:'1.00',  fine:'0.00', detune:0,  rateScaling:1, egR:[65,40,25,60], egL:[80,75,70,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/0',  level:71, keyVel:1, amSens:0 },
+      { num:5, tag:'Modulator', feedback:false, mode:'Fixed', coarse:'14.00', fine:'0.00', detune:0,  rateScaling:0, egR:[99,20,20,50], egL:[45,40,40,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/0',  level:38, keyVel:0, amSens:2 },
+      { num:6, tag:'Modulator', feedback:false, mode:'Ratio', coarse:'3.00',  fine:'0.00', detune:0,  rateScaling:2, egR:[99,30,20,45], egL:[60,55,50,0],  scalingMode:'Fractional', detail:'OFS +0 · LVL 251',              level:55, keyVel:1, amSens:0 },
+    ];
+
+    const operators = opsRaw.map(o => {
+      const detuneStr = o.detune > 0 ? ('+' + o.detune) : String(o.detune);
+      const egRStr = o.egR.join(' · ');
+      const egLStr = o.egL.join(' · ');
+      const rateBars = o.egR.map((v,i)=>({ n:'R'+(i+1), h:bar(v,28) }));
+      const levelBars = o.egL.map((v,i)=>({ n:'L'+(i+1), h:bar(v,28) }));
+      return {
+        ...o, detuneStr, egRStr, egLStr, rateBars, levelBars,
+        dotColor: o.tag === 'Carrier' ? '#2fe3c2' : '#5a636b',
+        scalingLine: o.scalingMode.toUpperCase() + ' · ' + o.detail,
+        oscLine: o.mode.toUpperCase() + ' ' + o.coarse + '/' + o.fine + ' · DET ' + detuneStr,
+        sensLine: 'KEY VEL ' + o.keyVel + ' · AM SENS ' + o.amSens,
+        summaryLine: o.mode.toUpperCase() + ' ' + o.coarse + ' · LVL ' + o.level + ' · EG-R ' + egRStr + ' · EG-L ' + egLStr,
+      };
+    });
+
+    operators.forEach(o => {
+      o.egLine  = envSvg(o.egR, o.egL, { W:320, H:78,  stroke:'#2fe3c2', sw:1.75, keys:true });
+      o.egFill  = envSvg(o.egR, o.egL, { W:320, H:74,  stroke:'#2fe3c2', sw:1.75, keys:true, fill:'rgba(47,227,194,0.14)' });
+      o.egPanel = envSvg(o.egR, o.egL, { W:380, H:104, stroke:'#d6dbe0', sw:1.5,  keys:true, grid:true, labels:true, keyText:true });
+      o.meterPct = Math.round(o.level / 99 * 100) + '%';
+    });
+
+    const groupsList = [
+      { icon:'fa-square-wave', title:'LFO', rows:[
+        {l:'Wave',v:'Triangle'},{l:'Speed',v:'30'},{l:'Delay',v:'0'},{l:'Mode',v:'Multi'},
+        {l:'PM Depth',v:'0'},{l:'AM Depth',v:'0'},{l:'Key Sync',v:'Off'},
+      ]},
+      { icon:'fa-object-group', title:'Key Mode', rows:[
+        {l:'Assign',v:'Polyphonic'},{l:'Unison Detune',v:'0'},
+      ]},
+      { icon:'fa-arrows-left-right', title:'Pitch Bend & Portamento', rows:[
+        {l:'Bend Mode',v:'Normal'},{l:'Bend Range',v:'2 semi'},{l:'Bend Step',v:'0'},
+        {l:'Porta Mode',v:'Sus-Key P Retain'},{l:'Porta Time',v:'0'},{l:'Porta Step',v:'0'},{l:'Random Pitch',v:'2'},
+      ]},
+    ];
+    const lfoGroup = groupsList[0];
+    const keyModeGroup = groupsList[1];
+    const pitchBendGroup = groupsList[2];
+
+    const pitchEGRaw = { range:'8 oct', velocity:'Off', rateScaling:'0', rates:[99,95,95,99], levels:[50,48,50,50] };
+    const pitchEG = {
+      ...pitchEGRaw,
+      rateBars: pitchEGRaw.rates.map((v,i)=>({ n:'R'+(i+1), v, h:bar(v,36) })),
+      levelBars: pitchEGRaw.levels.map((v,i)=>({ n:'L'+(i+1), v, h:bar(v,36) })),
+    };
+    pitchEG.ratesStr  = pitchEG.rates.join(' · ');
+    pitchEG.levelsStr = pitchEG.levels.join(' · ');
+    pitchEG.svgLine   = envSvg(pitchEG.rates, pitchEG.levels, { W:560, H:150, stroke:'#b58cff', sw:2, keys:true, grid:true, labels:true, keyText:true });
+    pitchEG.svgFill   = envSvg(pitchEG.rates, pitchEG.levels, { W:560, H:150, stroke:'#b58cff', sw:2, keys:true, grid:true, labels:true, keyText:true, fill:'rgba(181,140,255,0.14)' });
+    pitchEG.svgPanel  = envSvg(pitchEG.rates, pitchEG.levels, { W:640, H:168, stroke:'#d6dbe0', sw:1.75, keys:true, grid:true, labels:true, keyText:true });
+    const lfoWave = waveSvg('Triangle', { W:130, H:46, stroke:'#2fe3c2', sw:1.9 });
+
+    const controllersA = {
+      icon:'fa-lungs', title:'Controllers · BC / AT / MW', valueCols:['PM','AM','EG BIAS','P.BIAS'],
+      rows: [
+        { src:'BC', pm:'0', am:'0', eg:'0', extra:'+0' },
+        { src:'AT', pm:'0', am:'0', eg:'63', extra:'+0' },
+        { src:'MW', pm:'31', am:'0', eg:'0', extra:'—' },
+      ],
+    };
+    const controllersB = {
+      icon:'fa-sliders', title:'Controllers · FC1 / FC2 / MIDI', valueCols:['PM','AM','EG BIAS','VOL'],
+      note:'FC1 → CS1: Off',
+      rows: [
+        { src:'FC1', pm:'0', am:'0', eg:'0', extra:'0' },
+        { src:'FC2', pm:'0', am:'0', eg:'0', extra:'99' },
+        { src:'MIDI', pm:'0', am:'0', eg:'0', extra:'0' },
+      ],
+    };
+
+    return {
+      keyStats, algNodes, algLines, operators, groupsList, lfoGroup, keyModeGroup, pitchBendGroup,
+      pitchEG, controllersA, controllersB, lfoWave,
+      op1: operators[0],
+      opsRest: operators.slice(1),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -26,17 +26,46 @@ def clean_voice_name(name_bytes: bytes) -> str:
 
 
 def _parse_vmem_bank(data: bytes, bank_start: int, bank_index: int) -> list:
-    """Extracts 32 voices from a VMEM bank starting at bank_start."""
+    """Extracts 32 voices from a VMEM bank starting at bank_start.
+
+    Each result carries the raw 128-byte block under "_core_bytes" so callers that
+    need full parameter decoding (see extract_voice_blocks() / voice_params.py) can
+    reach it; parse_syx_file() strips underscore-prefixed keys before returning.
+    """
     voices = []
     for v in range(32):
         offset = bank_start + v * 128
+        voice_bytes = data[offset: offset + 128]
         voices.append({
-            "name": clean_voice_name(data[offset + 118: offset + 128]),
+            "name": clean_voice_name(voice_bytes[118:128]),
             "position": v + 1,
             "bank_index": bank_index,
             "patch_type": "Voice",
+            "_core_bytes": voice_bytes,
         })
     return voices
+
+
+def _parse_amem_bank(data: bytes, bank_start: int, bank_index: int, num_slots: int) -> list:
+    """Extracts up to num_slots additional-voice slots from an AMEM bank.
+
+    AMEM slots have no voice names of their own (synthetic names are assigned here
+    and later overwritten by the paired VMEM voice's name in _merge_vmem_amem). Each
+    result carries the raw 35-byte block under "_additional_bytes" (see
+    extract_voice_blocks() / voice_params.py).
+    """
+    slots = []
+    for s in range(num_slots):
+        offset = bank_start + s * AMEM_RECORD_SIZE
+        additional_bytes = data[offset: offset + AMEM_RECORD_SIZE]
+        slots.append({
+            "name": f"Ext Voice {s + 1:02d}",
+            "position": s + 1,
+            "bank_index": bank_index,
+            "patch_type": "Gen 2 Extended",
+            "_additional_bytes": additional_bytes,
+        })
+    return slots
 
 
 def _merge_vmem_amem(results: list) -> list:
@@ -45,6 +74,8 @@ def _merge_vmem_amem(results: list) -> list:
     treats each matched pair as a single Gen 2 Voice. Merge by (bank_index, position):
     the AMEM slot keeps its 'Gen 2 Extended' type but takes the name from the paired VMEM voice.
     Unmatched VMEM voices stay as 'Voice'; unmatched AMEM slots keep their synthetic name.
+    Raw byte blocks (_core_bytes / _additional_bytes) are carried through the merge so
+    extract_voice_blocks() can still reach them after pairing.
     """
     vmem = [r for r in results if r['patch_type'] == 'Voice']
     amem = [r for r in results if r['patch_type'] == 'Gen 2 Extended']
@@ -61,11 +92,14 @@ def _merge_vmem_amem(results: list) -> list:
         key = (slot['bank_index'], slot['position'])
         if key in vmem_by_key:
             consumed.add(key)
+            core = vmem_by_key[key]
             merged.append({
-                'name': vmem_by_key[key]['name'],
+                'name': core['name'],
                 'position': slot['position'],
                 'bank_index': slot['bank_index'],
                 'patch_type': 'Gen 2 Extended',
+                '_core_bytes': core.get('_core_bytes'),
+                '_additional_bytes': slot.get('_additional_bytes'),
             })
         else:
             merged.append(slot)
@@ -77,9 +111,14 @@ def _merge_vmem_amem(results: list) -> list:
     return other + merged
 
 
-def parse_syx_file(file_path: str) -> list:
+def _scan_all_patches(data: bytes) -> list:
     """
-    Parses a .syx file and extracts all DX7/DX7II patches found within it.
+    Scans raw SysEx bytes for all DX7/DX7II bulk-dump messages and returns one dict
+    per patch found, in file order, with VMEM+AMEM pairs already merged by
+    _merge_vmem_amem(). This is the single source of truth for "where is voice N in
+    this file" — both parse_syx_file() (name/position only) and extract_voice_blocks()
+    (keeps raw byte blocks for full parameter decoding) build on this same scan, so
+    they always agree on ordering for the same input bytes.
 
     Detects the following Yamaha SysEx formats:
       - VMEM (format 0x09): DX7 32-voice bulk dump — patch_type "Voice"
@@ -87,24 +126,10 @@ def parse_syx_file(file_path: str) -> list:
       - AMEM (format 0x06): DX7II/DX7S additional voice bulk dump — patch_type "Gen 2 Extended"
       - Raw 4096-byte fallback (no header) — patch_type "Voice"
 
-    Returns a list of dicts:
-    [
-      {
-        "name": str,
-        "position": int,    # 1-indexed within the bank/block
-        "bank_index": int,  # 0-indexed bank (for multi-bank files)
-        "patch_type": str,  # "Voice" | "Performance" | "Gen 2 Extended"
-      },
-      ...
-    ]
+    Result dicts may carry internal "_core_bytes" / "_additional_bytes" raw byte
+    blocks (see _parse_vmem_bank / _parse_amem_bank); these are stripped by
+    parse_syx_file() before it returns.
     """
-    try:
-        with open(file_path, 'rb') as f:
-            data = f.read()
-    except (FileNotFoundError, PermissionError, OSError) as e:
-        logger.error("Error reading file %s: %s", file_path, e)
-        return []
-
     results = []
     data_len = len(data)
     vmem_bank_count = 0
@@ -170,13 +195,7 @@ def parse_syx_file(file_path: str) -> list:
             data_start = i + 6
             if size > 0 and data_start + size <= data_len:
                 num_slots = min(size // AMEM_RECORD_SIZE, 32)
-                for s in range(num_slots):
-                    results.append({
-                        "name": f"Ext Voice {s + 1:02d}",
-                        "position": s + 1,
-                        "bank_index": amem_bank_count,
-                        "patch_type": "Gen 2 Extended",
-                    })
+                results.extend(_parse_amem_bank(data, data_start, amem_bank_count, num_slots))
                 amem_bank_count += 1
                 i = data_start + size
             else:
@@ -192,3 +211,58 @@ def parse_syx_file(file_path: str) -> list:
         results = _parse_vmem_bank(data, 0, 0)
 
     return results
+
+
+def parse_syx_file(file_path: str) -> list:
+    """
+    Parses a .syx file and extracts all DX7/DX7II patches found within it.
+
+    Detects the following Yamaha SysEx formats:
+      - VMEM (format 0x09): DX7 32-voice bulk dump — patch_type "Voice"
+      - PMEM (format 0x7E): DX7II/DX7S performance bulk dump — patch_type "Performance"
+      - AMEM (format 0x06): DX7II/DX7S additional voice bulk dump — patch_type "Gen 2 Extended"
+      - Raw 4096-byte fallback (no header) — patch_type "Voice"
+
+    Returns a list of dicts:
+    [
+      {
+        "name": str,
+        "position": int,    # 1-indexed within the bank/block
+        "bank_index": int,  # 0-indexed bank (for multi-bank files)
+        "patch_type": str,  # "Voice" | "Performance" | "Gen 2 Extended"
+      },
+      ...
+    ]
+    """
+    try:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        logger.error("Error reading file %s: %s", file_path, e)
+        return []
+
+    results = _scan_all_patches(data)
+    return [{k: v for k, v in r.items() if not k.startswith('_')} for r in results]
+
+
+def extract_voice_blocks(file_path: str) -> list:
+    """
+    Like parse_syx_file(), but retains the raw SysEx byte blocks needed for full
+    parameter decoding (see voice_params.py). Returns one dict per patch, in the
+    exact same order as parse_syx_file() would for the same file — both are built
+    from _scan_all_patches(), so a DB row's 0-based rank among rows sharing the same
+    file_path maps 1:1 onto this list's index (see database.get_voice_occurrence_index).
+
+    Each dict has: name, position, bank_index, patch_type, and:
+      - "_core_bytes": bytes | None       — 128-byte VMEM record (Voice / Gen 2 Extended)
+      - "_additional_bytes": bytes | None — 35-byte AMEM record (Gen 2 Extended only)
+    "Performance" entries carry neither key (not a single voice; see voice_params.py).
+    """
+    try:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        logger.error("Error reading file %s: %s", file_path, e)
+        return []
+
+    return _scan_all_patches(data)

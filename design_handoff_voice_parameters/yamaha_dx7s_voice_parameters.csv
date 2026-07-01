@@ -1,0 +1,70 @@
+Section,Group,Parameter Name,Description,Possible Values / Range
+Voice Parameters,Algorithm,Algorithm Select,Selects the FM algorithm (routing of 6 operators),1 ~ 32
+Voice Parameters,Algorithm,Feedback Level,Determines the amount of feedback for the operator with a feedback loop,0 ~ 7
+Voice Parameters,Algorithm,Oscillator Key Sync,Determines whether the oscillator phase resets with each key press,"off, on"
+Voice Parameters,Algorithm,Transpose,Transposes the pitch of the instrument relative to Middle C,C1 ~ C5
+Voice Parameters,Algorithm,Voice Name,Sets the name of the voice patch,10 characters (large/upper or small/lower case mode)
+Voice Parameters,Oscillator (Per-Op),Oscillator Mode,Determines if the frequency is a ratio or fixed frequency,"ratio, fixed"
+Voice Parameters,Oscillator (Per-Op),Frequency Coarse,Sets the coarse frequency adjustment of the operator,Varies based on mode
+Voice Parameters,Oscillator (Per-Op),Frequency Fine,Sets the fine frequency adjustment of the operator,Varies based on mode
+Voice Parameters,Oscillator (Per-Op),Oscillator Detune,Detunes the operator relative to others for chorus effects,-7 ~ +7
+Voice Parameters,Envelope Generator (Per-Op),Rate Scaling,Determines how much the envelope speed increases at higher pitches,0 ~ 7
+Voice Parameters,Envelope Generator (Per-Op),EG Rates 1 ~ 4,Sets the 4 rates of the volume/amplitude envelope generator,0 ~ 99
+Voice Parameters,Envelope Generator (Per-Op),EG Levels 1 ~ 4,Sets the 4 levels of the volume/amplitude envelope generator,0 ~ 99
+Voice Parameters,Output Level & Scaling (Per-Op),Scaling Mode,Selects between normal keyboard scaling and detailed fractional scaling,"normal, fractional"
+Voice Parameters,Output Level & Scaling (Per-Op),Output Level,Sets the output level (volume or modulation depth) of the operator,0 ~ 99
+Voice Parameters,Output Level & Scaling (Per-Op),Break Point,Sets the key center point for keyboard level scaling,A-1 ~ C8 (by half steps)
+Voice Parameters,Output Level & Scaling (Per-Op),Left Curve,Sets the keyboard scaling level curve shape to the left of break point,"-LIN, -EXP, +LIN, +EXP"
+Voice Parameters,Output Level & Scaling (Per-Op),Right Curve,Sets the keyboard scaling level curve shape to the right of break point,"-LIN, -EXP, +LIN, +EXP"
+Voice Parameters,Output Level & Scaling (Per-Op),Left Depth,Sets the level scaling depth to the left of the break point,0 ~ 99
+Voice Parameters,Output Level & Scaling (Per-Op),Right Depth,Sets the level scaling depth to the right of the break point,0 ~ 99
+Voice Parameters,Output Level & Scaling (Per-Op),Fractional Scaling Offset,Applies detailed offset in fractional scaling mode,-127 ~ +127
+Voice Parameters,Output Level & Scaling (Per-Op),Fractional Scaling Level,Sets the explicit scaling volume per key range block,0 ~ 255
+Voice Parameters,Sensitivity (Per-Op),Key Velocity Sensitivity,Determines how much the operator level responds to key strike velocity,0 ~ 7
+Voice Parameters,Sensitivity (Per-Op),Amplitude Modulation Sensitivity,Sets operator level responsiveness to amplitude modulation (LFO),0 ~ 7
+Voice Parameters,Sensitivity,Pitch Modulation Sensitivity,Sets global voice pitch responsiveness to pitch modulation (LFO),0 ~ 7
+Voice Parameters,LFO,LFO Wave,Selects the Low Frequency Oscillator waveform shape,"Triangle, Saw Down, Saw Up, Square, Sine, S/Hold"
+Voice Parameters,LFO,LFO Speed,Sets the speed of the LFO,0 ~ 99
+Voice Parameters,LFO,LFO Delay,Sets the time delay before the LFO modulation kicks in,0 ~ 99
+Voice Parameters,LFO,LFO Mode,Determines whether a single LFO affects all voices or individual LFOs run per voice,"Single, Multi"
+Voice Parameters,LFO,LFO Pitch Modulation Depth,Sets the base amount of pitch modulation from the LFO,0 ~ 99
+Voice Parameters,LFO,LFO Amplitude Modulation Depth,Sets the base amount of amplitude modulation from the LFO,0 ~ 99
+Voice Parameters,LFO,LFO Key Sync,Determines whether the LFO waveform restarts on each key press,"off, on"
+Voice Parameters,Pitch EG,Pitch Envelope Octave Range,Sets the maximum range depth of the pitch envelope generator,"1/2 (6 semitones), 1 (1 octave), 2 (2 octaves), 8 (8 octaves)"
+Voice Parameters,Pitch EG,Pitch Envelope Velocity,Controls intensity of the Pitch Envelope based on key velocity,"off, on"
+Voice Parameters,Pitch EG,Pitch Envelope Rate Scaling,Changes the speed of the pitch envelope across the keyboard range,0 ~ 7
+Voice Parameters,Pitch EG,Pitch Envelope Rates 1 ~ 4,Sets the 4 rates for the pitch envelope transitions,0 ~ 99
+Voice Parameters,Pitch EG,Pitch Envelope Levels 1 ~ 4,Sets the 4 target levels for the pitch envelope,0 ~ 99
+Voice Parameters,Key Mode,Key Mode Assign,Determines how voice polyphony and unison stacking are handled,"Polyphonic, Monophonic, Unison Poly, Unison Mono"
+Voice Parameters,Key Mode,Unison Detune,Sets depth of tuning variation between stacked voices (in Unison modes),0 ~ 7
+Voice Parameters,Pitch Bend & Portamento,Pitch Bend Mode,Determines which notes are affected during a pitch bend,"Normal, Lowest, Highest, Key On"
+Voice Parameters,Pitch Bend & Portamento,Pitch Bend Range,Sets the total pitch range of the pitch bend wheel,0 ~ 12 semitones
+Voice Parameters,Pitch Bend & Portamento,Pitch Bend Step,Enables stepped pitch bending increments,0 ~ 12 semitones
+Voice Parameters,Pitch Bend & Portamento,Portamento Mode,Selects the portamento glide tracking behavior,"Sus-Key, P Retain, Sus-Key P Follow, Fingered Porta, Full Time Porta"
+Voice Parameters,Pitch Bend & Portamento,Portamento Time,Sets the time duration of the portamento glide effect,0 ~ 99
+Voice Parameters,Pitch Bend & Portamento,Portamento Step,Sets discrete stepped intervals for the portamento effect,0 ~ 99
+Voice Parameters,Pitch Bend & Portamento,Random Pitch,Introduces random tuning instabilities for analog character,0 ~ 7
+Voice Parameters,Controllers (BC / AT / MW),Breath Controller Pitch Modulation Depth,Sets BC depth for pitch modulation,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Breath Controller Amplitude Modulation Depth,Sets BC depth for amplitude modulation,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Breath Controller EG Bias,Sets BC depth for envelope generator level bias,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Breath Controller Pitch Bias,Offsets the voice pitch directly via breath input,-50 ~ +50
+Voice Parameters,Controllers (BC / AT / MW),Aftertouch Pitch Modulation Depth,Sets keyboard aftertouch depth for pitch modulation,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Aftertouch Amplitude Modulation Depth,Sets keyboard aftertouch depth for amplitude modulation,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Aftertouch EG Bias,Sets keyboard aftertouch depth for operator envelope generator bias,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Aftertouch Pitch Bias,Offsets pitch directly based on keyboard aftertouch pressure,-50 ~ +50
+Voice Parameters,Controllers (BC / AT / MW),Modulation Wheel Pitch Modulation Depth,Sets mod wheel depth for pitch modulation,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Modulation Wheel Amplitude Modulation Depth,Sets mod wheel depth for amplitude modulation,0 ~ 99
+Voice Parameters,Controllers (BC / AT / MW),Modulation Wheel EG Bias,Sets mod wheel depth for operator envelope bias,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 1 to Control Slider 1,Routes Foot Controller 1 to override Continuous Slider 1 parameter,"off, on"
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 1 Pitch Modulation Depth,Sets FC1 depth for pitch modulation,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 1 Amplitude Modulation Depth,Sets FC1 depth for amplitude modulation,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 1 EG Bias,Sets FC1 depth for operator envelope bias,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 1 Volume,Sets FC1 depth for direct volume control,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 2 Pitch Modulation Depth,Sets FC2 depth for pitch modulation,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 2 Amplitude Modulation Depth,Sets FC2 depth for amplitude modulation,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 2 EG Bias,Sets FC2 depth for operator envelope bias,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),Foot Controller 2 Volume,Sets FC2 depth for direct volume control,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),MIDI Controller Pitch Modulation Depth,Sets map depth for incoming MIDI CC pitch modulation,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),MIDI Controller Amplitude Modulation Depth,Sets map depth for incoming MIDI CC amplitude modulation,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),MIDI Controller EG Bias,Sets map depth for incoming MIDI CC operator envelope bias,0 ~ 99
+Voice Parameters,Controllers (FC1 / FC2 / MIDI),MIDI Controller Volume,Sets map depth for incoming MIDI CC volume control,0 ~ 99

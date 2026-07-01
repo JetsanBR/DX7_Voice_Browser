@@ -1,11 +1,8 @@
 # DX7 Voice Browser — Design System
 
 > The single reference for how the app looks and behaves. Every new screen,
-> component, and tweak must be built from the tokens and rules below. Per-page
-> visual references live in each feature's `design_handoff_*/` folder (e.g.
-> `design_handoff_voice_parameters/`) — open the `.dc.html` files there in a
-> browser; they're the mockup a given section was built from, not a live
-> reference for the whole app.
+> component, and tweak must be built from the tokens and rules below.
+> Visual reference: `DX7 Browser — Design Review.dc.html` (open in a browser).
 
 ---
 
@@ -52,7 +49,7 @@ All values are tokens in `tokens.css`. Reference tokens, never raw hex.
 | `--ds-text` | `#eaedf0` | Titles, patch names |
 | `--ds-text-2` | `#c0c7cd` | Body, cell text |
 | `--ds-text-3` | `#97a1aa` | Descriptions |
-| `--ds-text-4` | `#5f6870` | Captions, paths, placeholders |
+| `--ds-text-4` | `#79828a` | Captions, paths, placeholders |
 
 ### Signal (the one accent)
 | Token | Hex | Use |
@@ -186,56 +183,3 @@ modal = radius `--ds-r-panel` + `--ds-shadow-lg`. **No `backdrop-filter`.**
 Loading `tokens.css` before `style.css` re-skins the app via the legacy aliases
 immediately; then migrate `style.css` rules to `--ds-*` names and delete the
 glow/glass/orb rules.
-
----
-
-## 7. Voice Parameters Page
-Full-page drill-down (`#section-detail` in `static/index.html`, rendered by the
-`renderDetailHeader/Operators/Modulation/KeyMode/Controllers` functions in
-`static/app.js`) showing every parameter of one voice. Source design:
-`design_handoff_voice_parameters/Voice Parameters Page.dc.html`. Reached via a
-"View Details" icon button (`.btn-reveal` + `fa-circle-info`) next to the reveal
-button on voice rows and duplicate-files-modal rows; hidden for `Performance`
-patches. A back button (`.detail-back-btn`) returns to whichever tab was active.
-
-- **Outer card** (`.vd-card`): `--ds-bg` background, `1px solid --ds-border`,
-  radius `--ds-r-panel`, `--ds-shadow-lg`.
-- **Header band** (`.vd-header`): `--ds-surface` bg, bottom `--ds-border`, holds
-  the brand mark, voice name + patch-type badge (reuses `.type-badge*`), a mono
-  meta line, the algorithm mini-diagram, and a key-stat strip.
-  - **Algorithm mini-diagram** (`.vd-alg-diagram` / `.vd-alg-node`): a fixed 2×3
-    grid of 20×20px nodes; carrier operators get `.vd-alg-node-carrier`
-    (`--ds-signal` fill/border/text), modulators stay neutral (`--ds-elevated` /
-    `--ds-border-2` / `--ds-text-3`). Node positions are decorative and constant
-    across algorithms — only the carrier/modulator coloring is data-driven (see
-    `voice_params.DX7_ALGORITHMS` in the backend).
-  - **Key-stat strip** (`.vd-key-stats` / `.vd-stat`): mono label (9px,
-    `--ds-text-4`) over a bold mono value (`--ds-fs-sm`, `--ds-text-2`), cells
-    separated by `--ds-border` verticals.
-- **Section heading** (`.vd-section-heading`): mono 2-digit index in
-  `--ds-signal` + Space Grotesk `<h2>` title, per numbered section (Operators /
-  Modulation / Key Mode & Pitch Bend & Portamento / Controllers).
-- **Operator tile** (`.op-tile`, 3-column `.op-grid`): `--ds-surface` card with
-  title row (carrier/modulator dot `.op-dot`/`.op-dot-carrier`, feedback icon
-  `.vd-fb-icon` shown only on the algorithm's feedback operator, role tag), an
-  inset envelope graph (`.op-eg-panel`), an output-level meter
-  (`.op-meter-track` / `.op-meter-fill`), numeric EG-R/EG-L rows, and a muted
-  oscillator/scaling/sensitivity summary.
-- **Inset graph panel** (`.op-eg-panel`, `.vd-inset-panel`): `--ds-sunken`
-  background, `1px solid --ds-border`, radius 8px — houses the SVG envelope/LFO
-  graphs drawn by `envSvg()` / `waveSvg()` in `app.js` (ported from the source
-  design's React logic; same math, plain string-returning functions). Envelope
-  stroke/fill use `--ds-signal` / `--ds-signal-fill-strong` for amplitude EGs and
-  `--ds-perf` / `--ds-perf-fill-strong` for the Pitch EG (reuses the existing
-  "Performance" violet hue for this one other purpose).
-- **Card-with-title** (`.vd-card-inner`, used for LFO / Pitch EG / Key Mode /
-  Pitch Bend & Portamento): `--ds-surface`, `1px solid --ds-border`, radius
-  `--ds-r-card`; `.vd-card-title` icon + label row, `.vd-kv-grid`/`.vd-kv-stack`
-  for label/value rows.
-- **Controller table** (`.vd-controller-table`): compact `source × PM/AM/EG
-  BIAS/extra` table, mono throughout, row top-borders `--ds-border`, source
-  column bold `--ds-text-2`.
-- New tokens added for this page (`static/tokens.css`): `--ds-signal-fill-strong`
-  and `--ds-perf-fill-strong` — a slightly stronger (14%) tint of the existing
-  signal/perf hues, used specifically for envelope-graph fill areas where the
-  standard 10-12% fills were too faint against the sunken panel background.

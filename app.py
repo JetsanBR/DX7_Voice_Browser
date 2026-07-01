@@ -9,6 +9,7 @@ from typing import Optional
 
 import database
 import parser
+import voice_params
 
 app = FastAPI(title="Yamaha DX7 Voice Browser")
 
@@ -174,6 +175,63 @@ def get_voices_files(name: str, patch_type: Optional[str] = None):
         return files
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/voices/{voice_id}/parameters")
+def get_voice_parameters(voice_id: int):
+    """
+    Returns the fully decoded synthesis parameters (operators, envelopes, LFO,
+    pitch EG, and — for Gen 2 Extended voices — key mode/pitch bend/portamento/
+    controllers) for a single voice, re-read from its source .syx file.
+    """
+    row = database.get_voice_by_id(voice_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Voice not found.")
+
+    if row["patch_type"] == "Performance":
+        raise HTTPException(
+            status_code=400,
+            detail="Performances aren't single voices — parameters aren't applicable."
+        )
+
+    try:
+        occurrence_index = database.get_voice_occurrence_index(voice_id, row["file_path"])
+    except ValueError:
+        raise HTTPException(
+            status_code=409,
+            detail="Could not locate this voice's data — the source file may have "
+                    "changed since the last scan. Try re-scanning its folder."
+        )
+
+    blocks = parser.extract_voice_blocks(row["file_path"])
+    if occurrence_index >= len(blocks):
+        raise HTTPException(
+            status_code=409,
+            detail="Could not re-read this voice from its source file — it may have "
+                    "been moved, deleted, or modified since the last scan. Try "
+                    "re-scanning its folder."
+        )
+
+    block = blocks[occurrence_index]
+    core_bytes = block.get("_core_bytes")
+    if core_bytes is None:
+        raise HTTPException(
+            status_code=409,
+            detail="This voice's core parameter data is missing from its source "
+                    "file. Try re-scanning its folder."
+        )
+
+    params = voice_params.build_voice_parameters(core_bytes, block.get("_additional_bytes"))
+
+    return {
+        "id": row["id"],
+        "voice_name": row["voice_name"],
+        "patch_type": row["patch_type"],
+        "folder_path": row["folder_path"],
+        "file_name": row["file_name"],
+        "file_path": row["file_path"],
+        "position": row["position"],
+        **params,
+    }
 
 @app.get("/api/duplicates")
 def get_duplicates():

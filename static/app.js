@@ -19,6 +19,13 @@ let selectedType = '';       // '' = all types
 let treeOpen = true;
 let expandedNodes = new Set();
 
+// Patch-type display config, shared by the voice list and the detail view header
+const TYPE_CFG = {
+    'Voice':          { label: 'VOICE',  cls: 'type-badge-voice', icon: 'fa-wave-square' },
+    'Performance':    { label: 'PERF',   cls: 'type-badge-perf',  icon: 'fa-layer-group' },
+    'Gen 2 Extended': { label: 'GEN 2',  cls: 'type-badge-gen2',  icon: 'fa-sliders' },
+};
+
 // DOM Elements
 const dirInput = document.getElementById('dir-input');
 const browseBtn = document.getElementById('browse-btn');
@@ -67,6 +74,17 @@ const dupLoading = document.getElementById('dup-loading');
 const dupEmpty = document.getElementById('dup-empty');
 const dupInitial = document.getElementById('dup-initial');
 const dupGroupsContainer = document.getElementById('dup-groups-container');
+
+// Voice Detail View Elements
+const tabBar = document.querySelector('.tab-bar');
+const sectionDetail = document.getElementById('section-detail');
+const detailBackBtn = document.getElementById('detail-back-btn');
+const detailHeader = document.getElementById('detail-header');
+const detailOperators = document.getElementById('detail-operators');
+const detailModulation = document.getElementById('detail-modulation');
+const detailKeymode = document.getElementById('detail-keymode');
+const detailControllers = document.getElementById('detail-controllers');
+let previousTab = 'explorer'; // which tab to restore when leaving the detail view
 
 // Modal Elements
 const filesModalOverlay = document.getElementById('files-modal-overlay');
@@ -117,6 +135,9 @@ function setupEventListeners() {
 
     // Cleanup actions
     findDuplicatesBtn.addEventListener('click', loadDuplicates);
+
+    // Voice Parameters detail view
+    detailBackBtn.addEventListener('click', backFromDetail);
 
     // Modal close
     modalCloseBtn.addEventListener('click', closeFilesModal);
@@ -383,15 +404,31 @@ function renderModalList(files) {
         infoEl.appendChild(nameEl);
         infoEl.appendChild(pathEl);
 
+        const actionsEl = document.createElement('div');
+        actionsEl.className = 'modal-file-actions';
+
+        if (f.patch_type !== 'Performance') {
+            const detailsBtn = document.createElement('button');
+            detailsBtn.className = 'btn-reveal modal-reveal-btn';
+            detailsBtn.title = 'View voice parameters';
+            detailsBtn.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            detailsBtn.addEventListener('click', () => {
+                closeFilesModal();
+                showVoiceDetail(f.id);
+            });
+            actionsEl.appendChild(detailsBtn);
+        }
+
         const revealBtn = document.createElement('button');
         revealBtn.className = 'btn-reveal modal-reveal-btn';
         revealBtn.title = 'Reveal in Explorer';
         revealBtn.innerHTML = '<i class="fa-regular fa-folder-open"></i>';
         revealBtn.addEventListener('click', () => revealInExplorer(f.file_path));
+        actionsEl.appendChild(revealBtn);
 
         item.appendChild(indexEl);
         item.appendChild(infoEl);
-        item.appendChild(revealBtn);
+        item.appendChild(actionsEl);
         modalList.appendChild(item);
     });
 }
@@ -510,12 +547,6 @@ function renderVoicesTable() {
     
     emptyState.classList.add('hidden');
     voicesTable.classList.remove('hidden');
-    
-    const TYPE_CFG = {
-        'Voice':          { label: 'VOICE',  cls: 'type-badge-voice', icon: 'fa-wave-square' },
-        'Performance':    { label: 'PERF',   cls: 'type-badge-perf',  icon: 'fa-layer-group' },
-        'Gen 2 Extended': { label: 'GEN 2',  cls: 'type-badge-gen2',  icon: 'fa-sliders' },
-    };
 
     filteredVoices.forEach(voice => {
         const tr = document.createElement('tr');
@@ -576,6 +607,14 @@ function renderVoicesTable() {
         // Action Column
         const tdAction = document.createElement('td');
         tdAction.className = 'col-actions';
+        if (voice.patch_type !== 'Performance') {
+            const detailsBtn = document.createElement('button');
+            detailsBtn.className = 'btn-reveal';
+            detailsBtn.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            detailsBtn.title = "View voice parameters";
+            detailsBtn.addEventListener('click', () => showVoiceDetail(voice.id));
+            tdAction.appendChild(detailsBtn);
+        }
         const revealBtn = document.createElement('button');
         revealBtn.className = 'btn-reveal';
         revealBtn.innerHTML = '<i class="fa-regular fa-folder-open"></i>';
@@ -856,6 +895,7 @@ function setTypeFilter(type) {
 // -----------------------------------------------------------------------
 
 function switchTab(tab) {
+    previousTab = tab;
     const toExplorer = tab === 'explorer';
     tabExplorer.classList.toggle('active', toExplorer);
     tabCleanup.classList.toggle('active', !toExplorer);
@@ -863,6 +903,382 @@ function switchTab(tab) {
     tabCleanup.setAttribute('aria-selected', String(!toExplorer));
     sectionExplorer.classList.toggle('hidden', !toExplorer);
     sectionCleanup.classList.toggle('hidden', toExplorer);
+}
+
+// -----------------------------------------------------------------------
+// Voice Parameters Detail View
+// -----------------------------------------------------------------------
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+}
+
+function signedStr(n) {
+    return n > 0 ? `+${n}` : String(n);
+}
+
+// DX7-style 4-rate / 4-level envelope drawn as an SVG contour:
+// L4 -> R1 -> L1 -> R2 -> L2 -> R3 -> L3 (sustain) -> KEY OFF -> R4 -> L4.
+// Ported from design_handoff_voice_parameters/Voice Parameters Page.dc.html's
+// envSvg() (React-based reference) to a plain function returning an SVG markup
+// string — same geometry/math, no framework.
+function envSvg(rates, levels, opts) {
+    const o = opts || {};
+    const W = o.W || 320, H = o.H || 78, stroke = o.stroke || 'var(--ds-signal)', sw = o.sw || 1.75;
+    const padT = o.labels ? 18 : 8, padB = o.keyText ? 18 : 12;
+    const padL = o.labels ? 20 : 6, padR = o.labels ? 20 : 6;
+    const x0 = padL, x1 = W - padR, yTop = padT, yBot = H - padB;
+    const yOf = (lv) => yBot - (lv / 99) * (yBot - yTop);
+    const L1 = levels[0], L2 = levels[1], L3 = levels[2], L4 = levels[3];
+    const R1 = rates[0], R2 = rates[1], R3 = rates[2];
+    const t1 = Math.abs(L1 - L4) / Math.max(R1, 3);
+    const t2 = Math.abs(L2 - L1) / Math.max(R2, 3);
+    const t3 = Math.abs(L3 - L2) / Math.max(R3, 3);
+    const preSum = (t1 + t2 + t3) || 1, innerW = x1 - x0;
+    const preW = innerW * 0.54, susW = innerW * 0.16, relW = innerW * 0.30;
+    const w1 = preW * t1 / preSum, w2 = preW * t2 / preSum, w3 = preW * t3 / preSum;
+    const P = [[x0, yOf(L4)], [x0 + w1, yOf(L1)], [x0 + w1 + w2, yOf(L2)], [x0 + w1 + w2 + w3, yOf(L3)]];
+    const keyOffX = P[3][0] + susW;
+    P.push([keyOffX, yOf(L3)]);
+    P.push([keyOffX + relW, yOf(L4)]);
+    const rnd = (n) => Math.round(n * 10) / 10;
+    const pts = P.map(p => rnd(p[0]) + ',' + rnd(p[1])).join(' ');
+
+    let extras = '';
+    if (o.grid) {
+        for (let i = 0; i < 4; i++) {
+            const y = yTop + i * ((yBot - yTop) / 3);
+            extras += `<line x1="${padL - 2}" y1="${y}" x2="${W - padR + 2}" y2="${y}" stroke="#1c2127" stroke-width="1" />`;
+        }
+    }
+    if (o.keys) {
+        extras += `<line x1="${P[0][0]}" y1="${yTop}" x2="${P[0][0]}" y2="${yBot}" stroke="#3a434c" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke" />`;
+        extras += `<line x1="${keyOffX}" y1="${yTop}" x2="${keyOffX}" y2="${yBot}" stroke="#3a434c" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke" />`;
+    }
+    extras += `<line x1="0" y1="${yBot}" x2="${W}" y2="${yBot}" stroke="#242a31" stroke-width="1" />`;
+
+    let fillPoly = '';
+    if (o.fill) {
+        const area = pts + ' ' + rnd(P[5][0]) + ',' + yBot + ' ' + rnd(P[0][0]) + ',' + yBot;
+        fillPoly = `<polygon points="${area}" fill="${o.fill}" stroke="none" />`;
+    }
+
+    const line = `<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />`;
+
+    const dotR = o.labels ? 2.4 : 1.9;
+    const dots = [P[1], P[2], P[3]]
+        .map(p => `<circle cx="${rnd(p[0])}" cy="${rnd(p[1])}" r="${dotR}" fill="${stroke}" />`)
+        .join('');
+
+    let labels = '';
+    if (o.labels) {
+        const tf = 'JetBrains Mono, monospace', tc = '#8a929b';
+        const T = (x, y, s, anchor) =>
+            `<text x="${rnd(x)}" y="${rnd(y)}" font-size="9" fill="${tc}" font-family="${tf}" text-anchor="${anchor || 'middle'}">${s}</text>`;
+        labels += T(P[1][0], P[1][1] - 6, 'L1');
+        labels += T(P[2][0], P[2][1] - 6, 'L2');
+        labels += T(P[3][0], P[3][1] - 6, 'L3');
+        labels += T(P[0][0], P[0][1] - 6, 'L4', 'start');
+        labels += T(P[5][0], P[5][1] - 6, 'L4', 'end');
+        labels += T((P[0][0] + P[1][0]) / 2 - 5, (P[0][1] + P[1][1]) / 2, 'R1', 'end');
+        labels += T((P[1][0] + P[2][0]) / 2 + 5, (P[1][1] + P[2][1]) / 2, 'R2', 'start');
+        labels += T((P[2][0] + P[3][0]) / 2, (P[2][1] + P[3][1]) / 2 - 5, 'R3');
+        labels += T((P[4][0] + P[5][0]) / 2 + 4, (P[4][1] + P[5][1]) / 2, 'R4', 'start');
+    }
+
+    let keyText = '';
+    if (o.keyText) {
+        const tf = 'JetBrains Mono, monospace';
+        keyText += `<text x="${P[0][0]}" y="${H - 4}" font-size="8.5" fill="#5a636b" font-family="${tf}" text-anchor="start">KEY ON</text>`;
+        keyText += `<text x="${keyOffX}" y="${H - 4}" font-size="8.5" fill="#5a636b" font-family="${tf}" text-anchor="middle">KEY OFF</text>`;
+    }
+
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="display:block;overflow:visible;">${extras}${fillPoly}${line}${dots}${labels}${keyText}</svg>`;
+}
+
+// LFO waveform preview. Ported from the same reference file's waveSvg().
+function waveSvg(shape, opts) {
+    const o = opts || {};
+    const W = o.W || 120, H = o.H || 44, stroke = o.stroke || 'var(--ds-signal)', sw = o.sw || 1.75;
+    const midY = H / 2, amp = H / 2 - 6, cyc = 2, seg = W / (cyc * 2);
+    let pts = [];
+    if (/tri/i.test(shape)) {
+        for (let i = 0; i <= cyc * 2; i++) pts.push([i * seg, i % 2 === 0 ? midY + amp : midY - amp]);
+    } else if (/saw/i.test(shape)) {
+        for (let i = 0; i < cyc; i++) {
+            pts.push([i * seg * 2, midY + amp]);
+            pts.push([(i + 1) * seg * 2 - 0.5, midY - amp]);
+            pts.push([(i + 1) * seg * 2, midY + amp]);
+        }
+    } else if (/squ/i.test(shape)) {
+        let up = false;
+        for (let i = 0; i <= cyc * 2; i++) {
+            const x = i * seg;
+            pts.push([x, up ? midY - amp : midY + amp]);
+            pts.push([x, up ? midY + amp : midY - amp]);
+            up = !up;
+        }
+    } else {
+        for (let i = 0; i <= 48; i++) {
+            const x = W * i / 48;
+            const y = midY - Math.sin((i / 48) * Math.PI * 2 * cyc) * amp;
+            pts.push([x, y]);
+        }
+    }
+    const rnd = (n) => Math.round(n * 10) / 10;
+    const s = pts.map(p => rnd(p[0]) + ',' + rnd(p[1])).join(' ');
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" preserveAspectRatio="none" style="display:block;"><polyline points="${s}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" /></svg>`;
+}
+
+async function showVoiceDetail(voiceId) {
+    tabBar.classList.add('hidden');
+    sectionExplorer.classList.add('hidden');
+    sectionCleanup.classList.add('hidden');
+    sectionDetail.classList.remove('hidden');
+    detailHeader.innerHTML = '<div class="loading-state"><div class="retro-loader"></div><p>Loading voice parameters...</p></div>';
+    detailOperators.innerHTML = '';
+    detailModulation.innerHTML = '';
+    detailKeymode.innerHTML = '';
+    detailControllers.innerHTML = '';
+    window.scrollTo(0, 0);
+
+    try {
+        const response = await fetch(`/api/voices/${voiceId}/parameters`);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to load voice parameters (status ${response.status}).`);
+        }
+        const data = await response.json();
+        renderVoiceDetail(data);
+    } catch (e) {
+        showToast(e.message, 'error');
+        backFromDetail();
+    }
+}
+
+function backFromDetail() {
+    sectionDetail.classList.add('hidden');
+    tabBar.classList.remove('hidden');
+    switchTab(previousTab);
+}
+
+function renderVoiceDetail(data) {
+    renderDetailHeader(data);
+    renderDetailOperators(data);
+    renderDetailModulation(data);
+    renderDetailKeyMode(data);
+    renderDetailControllers(data);
+}
+
+function renderDetailHeader(data) {
+    const typeCfg = TYPE_CFG[data.patch_type] || { label: data.patch_type || '?', cls: '', icon: 'fa-question' };
+    const carriers = new Set(data.algorithm_carriers || []);
+
+    // Static 2x3 grid position, real carrier/modulator coloring per algorithm.
+    const gridOrder = [6, 5, 4, 3, 2, 1];
+    const nodesHtml = gridOrder.map((n, i) => {
+        const isCarrier = carriers.has(n);
+        const top = i < 3 ? '0px' : '38px';
+        const left = `${(i % 3) * 33}px`;
+        const cls = isCarrier ? 'vd-alg-node vd-alg-node-carrier' : 'vd-alg-node';
+        return `<div class="${cls}" style="top:${top};left:${left};">${n}</div>`;
+    }).join('');
+
+    const keyStats = [
+        { l: 'ALGORITHM', v: data.algorithm },
+        { l: 'FEEDBACK', v: data.feedback },
+        { l: 'OSC SYNC', v: data.osc_key_sync ? 'On' : 'Off' },
+        { l: 'TRANSPOSE', v: data.transpose_name },
+        { l: 'KEY MODE', v: data.additional.key_mode_assign },
+        { l: 'P.MOD SENS', v: data.lfo.pitch_mod_sensitivity },
+    ];
+    const statsHtml = keyStats.map(s => `
+        <div class="vd-stat">
+            <div class="vd-stat-label">${escapeHtml(s.l)}</div>
+            <div class="vd-stat-value">${escapeHtml(String(s.v))}</div>
+        </div>`).join('');
+
+    detailHeader.innerHTML = `
+        <div class="vd-header-left">
+            <div class="vd-brand-mark">DX</div>
+            <div>
+                <div class="vd-name-row">
+                    <h1 class="vd-name">${escapeHtml(data.voice_name)}</h1>
+                    <span class="type-badge ${typeCfg.cls}"><i class="fa-solid ${typeCfg.icon}"></i> ${typeCfg.label}</span>
+                </div>
+                <div class="vd-meta">${escapeHtml(data.file_name)} &middot; POS ${data.position} &middot; ALG ${data.algorithm}</div>
+            </div>
+        </div>
+        <div class="vd-alg-diagram">${nodesHtml}</div>
+        <div class="vd-key-stats">${statsHtml}</div>
+    `;
+}
+
+function renderDetailOperators(data) {
+    const carriers = new Set(data.algorithm_carriers || []);
+    const fbOp = data.algorithm_feedback_op;
+
+    const tiles = data.operators.map(op => {
+        const isCarrier = carriers.has(op.op);
+        const fbIcon = op.op === fbOp
+            ? '<i class="fa-solid fa-rotate-right vd-fb-icon" title="Feedback operator"></i>'
+            : '';
+        const meterPct = Math.round((op.level / 99) * 100);
+        const eg = envSvg(op.eg_rate, op.eg_level, {
+            W: 320, H: 74, stroke: 'var(--ds-signal)', sw: 1.75, keys: true, fill: 'var(--ds-signal-fill-strong)'
+        });
+        return `
+        <div class="op-tile">
+            <div class="op-tile-head">
+                <span class="op-tile-title">
+                    <span class="op-dot ${isCarrier ? 'op-dot-carrier' : ''}"></span>
+                    OP${op.op} ${fbIcon}
+                </span>
+                <span class="op-role-tag">${isCarrier ? 'Carrier' : 'Modulator'}</span>
+            </div>
+            <div class="op-eg-panel">${eg}</div>
+            <div class="op-meter">
+                <div class="op-meter-row"><span>OUTPUT LEVEL</span><span>${op.level}</span></div>
+                <div class="op-meter-track"><div class="op-meter-fill" style="width:${meterPct}%;"></div></div>
+            </div>
+            <div class="op-eg-numbers">
+                <span class="op-eg-label">EG-R</span><span class="op-eg-value">${op.eg_rate.join(' &middot; ')}</span>
+                <span class="op-eg-label">EG-L</span><span class="op-eg-value">${op.eg_level.join(' &middot; ')}</span>
+            </div>
+            <div class="op-summary">
+                <div>${op.osc_mode.toUpperCase()} COARSE ${op.freq_coarse} FINE ${op.freq_fine} &middot; DET ${signedStr(op.detune)} &middot; RS ${op.rate_scaling}</div>
+                <div>${op.left_curve_name}/${op.left_depth} &middot; BP ${op.break_point_name} &middot; ${op.right_curve_name}/${op.right_depth}</div>
+                <div>KEY VEL ${op.vel_sens} &middot; AM SENS ${op.amp_mod_sens}</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    detailOperators.innerHTML = `
+        <div class="vd-section-heading"><span class="vd-section-index">01</span><h2>Operators</h2></div>
+        <div class="op-grid">${tiles}</div>
+    `;
+}
+
+function renderDetailModulation(data) {
+    const lfo = data.lfo;
+    const peg = data.pitch_eg;
+    const a = data.additional;
+
+    const lfoWave = waveSvg(lfo.wave_name, { W: 130, H: 46, stroke: 'var(--ds-signal)', sw: 1.9 });
+    const pegSvg = envSvg(peg.rate, peg.level, {
+        W: 560, H: 150, stroke: 'var(--ds-perf)', sw: 2, keys: true, grid: true, labels: true, keyText: true,
+        fill: 'var(--ds-perf-fill-strong)'
+    });
+
+    detailModulation.innerHTML = `
+        <div class="vd-section-heading"><span class="vd-section-index">02</span><h2>Modulation</h2></div>
+        <div class="vd-mod-grid">
+            <div class="vd-card-inner">
+                <div class="vd-card-title"><i class="fa-solid fa-square-wave" style="color:var(--ds-signal);"></i> LFO <span class="vd-card-tag">${escapeHtml(lfo.wave_name)}</span></div>
+                <div class="vd-inset-panel vd-lfo-panel">${lfoWave}</div>
+                <div class="vd-kv-grid">
+                    <div><span>Wave</span><span>${escapeHtml(lfo.wave_name)}</span></div>
+                    <div><span>Speed</span><span>${lfo.speed}</span></div>
+                    <div><span>Delay</span><span>${lfo.delay}</span></div>
+                    <div><span>Mode</span><span>${escapeHtml(a.lfo_key_trigger)}</span></div>
+                    <div><span>PM Depth</span><span>${lfo.pmd}</span></div>
+                    <div><span>AM Depth</span><span>${lfo.amd}</span></div>
+                    <div><span>Key Sync</span><span>${lfo.sync ? 'On' : 'Off'}</span></div>
+                </div>
+            </div>
+            <div class="vd-card-inner">
+                <div class="vd-card-title"><i class="fa-solid fa-chart-line" style="color:var(--ds-perf);"></i> Pitch EG <span class="vd-card-tag">RANGE ${escapeHtml(a.pitch_eg_range)}</span></div>
+                <div class="vd-inset-panel">${pegSvg}</div>
+                <div class="vd-stat-row">
+                    <span>RATES <strong>${peg.rate.join(' &middot; ')}</strong></span>
+                    <span>LEVELS <strong>${peg.level.join(' &middot; ')}</strong></span>
+                    <span>VELOCITY <strong>${a.pitch_eg_velocity ? 'On' : 'Off'}</strong></span>
+                    <span>RATE SCL <strong>${a.pitch_eg_rate_scaling}</strong></span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderDetailControllers(data) {
+    const a = data.additional;
+    const rowsA = [
+        { src: 'BC', pm: a.breath_controller.pitch, am: a.breath_controller.amp, eg: a.breath_controller.eg_bias, extra: signedStr(a.breath_controller.pitch_bias) },
+        { src: 'AT', pm: a.aftertouch.pitch, am: a.aftertouch.amp, eg: a.aftertouch.eg_bias, extra: signedStr(a.aftertouch.pitch_bias) },
+        { src: 'MW', pm: a.mod_wheel.pitch, am: a.mod_wheel.amp, eg: a.mod_wheel.eg_bias, extra: '&mdash;' },
+    ];
+    const rowsB = [
+        { src: 'FC1', pm: a.foot_controller_1.pitch, am: a.foot_controller_1.amp, eg: a.foot_controller_1.eg_bias, extra: a.foot_controller_1.volume },
+        { src: 'FC2', pm: a.foot_controller_2.pitch, am: a.foot_controller_2.amp, eg: a.foot_controller_2.eg_bias, extra: a.foot_controller_2.volume },
+        { src: 'MIDI', pm: a.midi_controller.pitch, am: a.midi_controller.amp, eg: a.midi_controller.eg_bias, extra: a.midi_controller.volume },
+    ];
+
+    const buildTable = (cols, rows) => `
+        <table class="vd-controller-table">
+            <thead><tr><th></th>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+            <tbody>${rows.map(r => `<tr><td class="vd-ct-src">${r.src}</td><td>${r.pm}</td><td>${r.am}</td><td>${r.eg}</td><td>${r.extra}</td></tr>`).join('')}</tbody>
+        </table>`;
+
+    detailControllers.innerHTML = `
+        <div class="vd-section-heading">
+            <span class="vd-section-index">04</span><h2>Controllers</h2>
+            ${defaultsTag(a.present)}
+        </div>
+        <div class="vd-two-col ${defaultedClass(a.present)}">
+            <div class="vd-card-inner">
+                <div class="vd-card-title"><i class="fa-solid fa-lungs" style="color:var(--ds-signal);"></i> BC / AT / MW</div>
+                ${buildTable(['PM', 'AM', 'EG BIAS', 'P.BIAS'], rowsA)}
+            </div>
+            <div class="vd-card-inner">
+                <div class="vd-card-title"><i class="fa-solid fa-sliders" style="color:var(--ds-signal);"></i> FC1 / FC2 / MIDI</div>
+                ${buildTable(['PM', 'AM', 'EG BIAS', 'VOL'], rowsB)}
+                <div class="vd-footnote">FC1 &rarr; CS1: ${a.fc1_as_cs1 ? 'On' : 'Off'}</div>
+            </div>
+        </div>
+    `;
+}
+
+function defaultsTag(present) {
+    return present
+        ? ''
+        : '<span class="vd-defaults-tag" title="Not stored in this voice format — showing power-on default values">DEFAULT VALUES</span>';
+}
+
+function defaultedClass(present) {
+    return present ? '' : 'vd-defaulted';
+}
+
+function renderDetailKeyMode(data) {
+    const a = data.additional;
+    detailKeymode.innerHTML = `
+        <div class="vd-section-heading">
+            <span class="vd-section-index">03</span><h2>Key Mode, Pitch Bend &amp; Portamento</h2>
+            ${defaultsTag(a.present)}
+        </div>
+        <div class="vd-two-col ${defaultedClass(a.present)}">
+            <div class="vd-card-inner">
+                <div class="vd-card-title"><i class="fa-solid fa-object-group" style="color:var(--ds-signal);"></i> Key Mode</div>
+                <div class="vd-kv-stack">
+                    <div><span>Assign</span><span>${escapeHtml(a.key_mode_assign)}</span></div>
+                    <div><span>Unison Detune</span><span>${a.unison_detune}</span></div>
+                </div>
+            </div>
+            <div class="vd-card-inner">
+                <div class="vd-card-title"><i class="fa-solid fa-arrows-left-right" style="color:var(--ds-signal);"></i> Pitch Bend &amp; Portamento</div>
+                <div class="vd-kv-grid">
+                    <div><span>Bend Mode</span><span>${escapeHtml(a.pitch_bend_mode)}</span></div>
+                    <div><span>Bend Range</span><span>${a.pitch_bend_range} semi</span></div>
+                    <div><span>Bend Step</span><span>${a.pitch_bend_step}</span></div>
+                    <div><span>Porta Mode</span><span>${escapeHtml(a.portamento_mode)}</span></div>
+                    <div><span>Porta Time</span><span>${a.portamento_time}</span></div>
+                    <div><span>Porta Step</span><span>${a.portamento_step}</span></div>
+                    <div><span>Random Pitch</span><span>${a.random_pitch}</span></div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // -----------------------------------------------------------------------

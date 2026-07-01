@@ -33,12 +33,10 @@
   --ds-signal-fill: rgba(47,227,194,0.10);  /* tinted backgrounds          */
   --ds-signal-line: rgba(47,227,194,0.30);  /* tinted borders              */
   --ds-signal-ring: rgba(47,227,194,0.12);  /* focus ring                  */
-  --ds-signal-fill-strong: rgba(47,227,194,0.14); /* envelope-graph fill area */
 
   /* ---- SEMANTIC PATCH TYPES (data only — never decoration) -------------- */
   --ds-voice:       #2fe3c2;   --ds-voice-fill: rgba(47,227,194,0.10);  --ds-voice-line: rgba(47,227,194,0.30);
   --ds-perf:        #b58cff;   --ds-perf-fill:  rgba(181,140,255,0.12); --ds-perf-line:  rgba(181,140,255,0.30);
-  --ds-perf-fill-strong: rgba(181,140,255,0.14); /* pitch-EG graph fill area (reuses the perf/violet hue) */
   --ds-gen2:        #f5b860;   --ds-gen2-fill:  rgba(245,184,96,0.12);  --ds-gen2-line:  rgba(245,184,96,0.30);
 
   /* ---- STATUS ----------------------------------------------------------- */

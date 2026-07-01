@@ -99,6 +99,7 @@ def get_all_voices(search_query=None, folder_filter=None, type_filter=None):
         cursor.execute(
             f"""
             SELECT
+                MIN(id) AS id,
                 voice_name,
                 patch_type,
                 folder_path,
@@ -144,7 +145,7 @@ def get_voices_by_name(voice_name: str, patch_type: str = None):
         cursor = conn.cursor()
         cursor.execute(
             f"""
-            SELECT voice_name, patch_type, folder_path, file_name, file_path, position
+            SELECT id, voice_name, patch_type, folder_path, file_name, file_path, position
             FROM voices {where}
             ORDER BY file_name ASC, position ASC
             """,
@@ -153,6 +154,34 @@ def get_voices_by_name(voice_name: str, patch_type: str = None):
         rows = cursor.fetchall()
 
     return [dict(row) for row in rows]
+
+
+def get_voice_by_id(voice_id: int):
+    """Returns the full row for a single voice record by primary key id, or None."""
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM voices WHERE id = ?", (voice_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def get_voice_occurrence_index(voice_id: int, file_path: str) -> int:
+    """
+    Returns the 0-based rank of voice_id among all rows sharing file_path, ordered
+    by id ASC. This rank is stable and matches the order parser.parse_syx_file() /
+    parser.extract_voice_blocks() return voices in for that same file, since rows
+    for one file are inserted in that exact order at scan time and are never
+    reordered afterward (folder deletion removes whole rows, it doesn't reshuffle
+    survivors). Raises ValueError if voice_id isn't among file_path's rows.
+    """
+    with closing(_connect()) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM voices WHERE file_path = ? ORDER BY id ASC",
+            (file_path,)
+        )
+        ids = [row[0] for row in cursor.fetchall()]
+    return ids.index(voice_id)
 
 
 # ---------------------------------------------------------------------------

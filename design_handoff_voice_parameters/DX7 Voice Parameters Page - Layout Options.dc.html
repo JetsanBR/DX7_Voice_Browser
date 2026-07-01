@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta name="design_doc_mode" content="canvas">
+<style>
+  html,body{margin:0;background:#1a1d22;}
+  *{box-sizing:border-box;}
+  .dv-turn{padding:40px 44px 48px;}
+  .dv-thd{display:flex;align-items:baseline;gap:12px;margin:0 0 6px;font-family:system-ui,sans-serif;}
+  .dv-tid{font:600 11px ui-monospace,Menlo,monospace;padding:3px 8px;background:#eaedf0;color:#14171a;border-radius:5px;text-decoration:none;}
+  .dv-tname{font:600 15px/1.3 system-ui,sans-serif;color:#eaedf0;}
+  .dv-tdesc{font:400 12.5px/1.5 system-ui,sans-serif;color:#8a919a;margin:0 0 26px;max-width:70ch;}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start;}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px;}
+  .dv-oid{font:600 11px ui-monospace,Menlo,monospace;padding:3px 8px;background:rgba(255,255,255,.08);color:#eaedf0;border-radius:5px;text-decoration:none;}
+  .dv-olabel{display:flex;align-items:baseline;gap:9px;font:600 13px/1.3 system-ui,sans-serif;color:#eaedf0;}
+  .dv-odesc{font:400 12px/1.5 system-ui,sans-serif;color:#8a919a;max-width:60ch;margin:0;}
+  .dv-card{background:#fff;border-radius:8px;overflow:hidden;}
+  .dv-opt:target .dv-oid{background:#2fe3c2;color:#06231d;}
+  .dv-next{margin:30px 0 0;font:12.5px/1.6 system-ui,sans-serif;color:#8a919a;max-width:90ch;}
+  .dv-next a{color:#2fe3c2;}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Graph-forward riffs on <a class="dv-oid" href="#1c">1c</a> — envelopes drawn, numbers kept</span></div>
+  <p class="dv-tdesc">Same spec-sheet backbone as <a class="dv-oid" href="#1c" style="color:#2fe3c2;">1c</a>, now with the DX7 EG contour (L4→R1→L1→R2→L2→R3→L3 sustain→KEY OFF→R4→L4) drawn per operator, plus the LFO waveform and a large labelled Pitch EG. Three treatments: clean line charts, front-panel silk-screen, and filled-area dashboard.</p>
+  <div class="dv-opts">
+
+    <!-- ============ 2a — LINE GRAPHS ============ -->
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Signal graphs — envelopes as clean line charts</div>
+      <p class="dv-odesc">Every operator leads with its EG contour as a thin line chart (KEY ON / KEY OFF marked); R &amp; L numbers stay beneath for reference. LFO shows its waveform; Pitch EG gets a large labelled graph.</p>
+      <div class="dv-card" style="width:1200px;background:#0a0c0f;border:1px solid #242a31;border-radius:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);">
+
+        <div style="display:flex;align-items:center;gap:22px;padding:22px 30px;background:#101317;border-bottom:1px solid #1c2127;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:13px;">
+            <div style="width:38px;height:38px;border-radius:8px;background:#2fe3c2;display:flex;align-items:center;justify-content:center;color:#06231d;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">DX</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:23px;font-weight:600;letter-spacing:-.01em;margin:0;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">MELLOW HORN</h1>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.04em;color:#2fe3c2;background:rgba(47,227,194,0.10);border:1px solid rgba(47,227,194,0.3);padding:3px 8px;border-radius:6px;"><i class="fa-solid fa-wave-square" style="font-size:9px;"></i> VOICE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.04em;margin-top:4px;">ROM1A.SYX · POS 01 · ALG 2</div>
+            </div>
+          </div>
+          <div style="position:relative;width:80px;height:56px;flex-shrink:0;">
+            <sc-for list="{{ algNodes }}" as="n" hint-placeholder-count="6">
+              <div style="position:absolute;width:20px;height:20px;top:{{ n.top }};left:{{ n.left }};border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;background:{{ n.bg }};border:1px solid {{ n.border }};color:{{ n.color }};">{{ n.num }}</div>
+            </sc-for>
+            <sc-for list="{{ algLines }}" as="ln" hint-placeholder-count="3">
+              <div style="position:absolute;width:1px;height:14px;top:{{ ln.top }};left:{{ ln.left }};background:#313942;"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;margin-left:auto;border-left:1px solid #1c2127;">
+            <sc-for list="{{ keyStats }}" as="s" hint-placeholder-count="6">
+              <div style="padding:2px 16px;border-right:1px solid #1c2127;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:3px;">{{ s.l }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c7cdd2;font-weight:600;">{{ s.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:34px 30px 0;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">01</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Operators — amplitude envelopes</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:38px;">
+            <sc-for list="{{ operators }}" as="op" hint-placeholder-count="6">
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:{{ op.dotColor }};flex-shrink:0;"></span>
+                    OP{{ op.num }}
+                    <sc-if value="{{ op.feedback }}" hint-placeholder-val="{{ false }}"><i class="fa-solid fa-rotate-right" style="font-size:9px;color:#2fe3c2;"></i></sc-if>
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;">{{ op.tag }}</span>
+                </div>
+                <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:6px 8px 2px;margin-bottom:12px;">{{ op.egLine }}</div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;">
+                  <span style="color:#5a636b;">EG-R</span><span style="color:#c0c7cd;text-align:right;">{{ op.egRStr }}</span>
+                  <span style="color:#5a636b;">EG-L</span><span style="color:#c0c7cd;text-align:right;">{{ op.egLStr }}</span>
+                </div>
+                <div style="border-top:1px solid #1c2127;margin-top:10px;padding-top:9px;display:flex;flex-direction:column;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#79828a;">
+                  <div>{{ op.oscLine }} · RS {{ op.rateScaling }}</div>
+                  <div>OUT {{ op.level }} · {{ op.scalingLine }}</div>
+                  <div>{{ op.sensLine }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:0 30px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">02</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Modulation</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ lfoGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ lfoGroup.title }}</span>
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">TRIANGLE</span>
+              </div>
+              <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:12px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;">{{ lfoWave }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;">
+                <sc-for list="{{ lfoGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="font-size:12px;color:#97a1aa;">{{ row.l }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid fa-chart-line" style="color:#b58cff;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Pitch EG</span>
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">RANGE {{ pitchEG.range }}</span>
+              </div>
+              <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:10px 12px 4px;margin-bottom:14px;">{{ pitchEG.svgLine }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px 24px;font-family:'JetBrains Mono',monospace;font-size:11.5px;">
+                <span style="color:#5a636b;">RATES <span style="color:#c0c7cd;">{{ pitchEG.ratesStr }}</span></span>
+                <span style="color:#5a636b;">LEVELS <span style="color:#c0c7cd;">{{ pitchEG.levelsStr }}</span></span>
+                <span style="color:#5a636b;">VELOCITY <span style="color:#c0c7cd;">{{ pitchEG.velocity }}</span></span>
+                <span style="color:#5a636b;">RATE SCL <span style="color:#c0c7cd;">{{ pitchEG.rateScaling }}</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 30px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">03</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Key Mode, Pitch Bend &amp; Portamento</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ keyModeGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ keyModeGroup.title }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ keyModeGroup.rows }}" as="row" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ pitchBendGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ pitchBendGroup.title }}</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                <sc-for list="{{ pitchBendGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 30px 38px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">04</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Controllers</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersA.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersA.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersA.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersA.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersB.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersB.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersB.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersB.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;">{{ controllersB.note }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 2b — FRONT-PANEL SILK-SCREEN ============ -->
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Front-panel etch — envelopes in the DX7 silk-screen style</div>
+      <p class="dv-odesc">Directly echoes the panel diagram you sent: light strokes on dark, gridlines, R1–R4 / L1–L4 point labels and KEY ON / KEY OFF markers. Operators become full-width rows — a large etched envelope on the left, parameters ruled out beside it, like a manual page.</p>
+      <div class="dv-card" style="width:1200px;background:#0a0c0f;border:1px solid #242a31;border-radius:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);">
+
+        <div style="display:flex;align-items:center;gap:22px;padding:22px 40px;background:#101317;border-bottom:1px solid #1c2127;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:13px;">
+            <div style="width:38px;height:38px;border-radius:8px;background:#2fe3c2;display:flex;align-items:center;justify-content:center;color:#06231d;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">DX</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:23px;font-weight:600;letter-spacing:-.01em;margin:0;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">MELLOW HORN</h1>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.04em;color:#2fe3c2;background:rgba(47,227,194,0.10);border:1px solid rgba(47,227,194,0.3);padding:3px 8px;border-radius:6px;"><i class="fa-solid fa-wave-square" style="font-size:9px;"></i> VOICE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.04em;margin-top:4px;">ROM1A.SYX · POS 01 · ALG 2</div>
+            </div>
+          </div>
+          <div style="position:relative;width:80px;height:56px;flex-shrink:0;">
+            <sc-for list="{{ algNodes }}" as="n" hint-placeholder-count="6">
+              <div style="position:absolute;width:20px;height:20px;top:{{ n.top }};left:{{ n.left }};border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;background:{{ n.bg }};border:1px solid {{ n.border }};color:{{ n.color }};">{{ n.num }}</div>
+            </sc-for>
+            <sc-for list="{{ algLines }}" as="ln" hint-placeholder-count="3">
+              <div style="position:absolute;width:1px;height:14px;top:{{ ln.top }};left:{{ ln.left }};background:#313942;"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;margin-left:auto;border-left:1px solid #1c2127;">
+            <sc-for list="{{ keyStats }}" as="s" hint-placeholder-count="6">
+              <div style="padding:2px 16px;border-right:1px solid #1c2127;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:3px;">{{ s.l }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c7cdd2;font-weight:600;">{{ s.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:34px 40px 0;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">01</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Operators — EG / envelope</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:38px;">
+            <sc-for list="{{ operators }}" as="op" hint-placeholder-count="6">
+              <div style="display:flex;gap:26px;align-items:center;background:#0c0f13;border:1px solid #242a31;border-radius:10px;padding:16px 22px;">
+                <div style="width:380px;flex-shrink:0;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <span style="display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">
+                      <span style="width:6px;height:6px;border-radius:50%;background:{{ op.dotColor }};"></span>
+                      OPERATOR {{ op.num }}
+                      <sc-if value="{{ op.feedback }}" hint-placeholder-val="{{ false }}"><i class="fa-solid fa-rotate-right" style="font-size:9px;color:#2fe3c2;"></i></sc-if>
+                    </span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;">{{ op.tag }}</span>
+                  </div>
+                  {{ op.egPanel }}
+                </div>
+                <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:22px;">
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:9px;">OSCILLATOR</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Mode</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.mode }}</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Coarse</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.coarse }}</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Fine</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.fine }}</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Detune</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.detuneStr }}</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:9px;">ENVELOPE</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Rate Scl</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.rateScaling }}</span></div>
+                      <div><div style="font-size:10px;color:#5a636b;margin-bottom:2px;">Rates</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.egRStr }}</div></div>
+                      <div><div style="font-size:10px;color:#5a636b;margin-bottom:2px;">Levels</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.egLStr }}</div></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:9px;">OUTPUT &amp; SCALING</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Level</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#eaedf0;font-weight:600;">{{ op.level }}</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Mode</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.scalingMode }}</span></div>
+                      <div><div style="font-size:10px;color:#5a636b;margin-bottom:2px;">Detail</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#c0c7cd;">{{ op.detail }}</div></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:9px;">SENSITIVITY</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">Key Vel</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.keyVel }}</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">AM Sens</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ op.amSens }}</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:0 40px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">02</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Modulation</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#0c0f13;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><i class="fa-solid fa-chart-line" style="color:#d6dbe0;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">EG / Pitch EG</span><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">RANGE {{ pitchEG.range }}</span></div>
+              {{ pitchEG.svgPanel }}
+              <div style="display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:11.5px;">
+                <span style="color:#5a636b;">RATES <span style="color:#c0c7cd;">{{ pitchEG.ratesStr }}</span></span>
+                <span style="color:#5a636b;">LEVELS <span style="color:#c0c7cd;">{{ pitchEG.levelsStr }}</span></span>
+                <span style="color:#5a636b;">VELOCITY <span style="color:#c0c7cd;">{{ pitchEG.velocity }}</span></span>
+              </div>
+            </div>
+            <div style="background:#0c0f13;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ lfoGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ lfoGroup.title }}</span></div>
+              <div style="background:#08090b;border:1px solid #1c2127;border-radius:8px;padding:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;">{{ lfoWave }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;">
+                <sc-for list="{{ lfoGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 40px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">03</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Key Mode, Pitch Bend &amp; Portamento</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ keyModeGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ keyModeGroup.title }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ keyModeGroup.rows }}" as="row" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ pitchBendGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ pitchBendGroup.title }}</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                <sc-for list="{{ pitchBendGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 40px 38px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">04</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Controllers</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersA.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersA.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersA.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersA.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersB.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersB.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersB.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersB.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;">{{ controllersB.note }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 2c — FILLED DASHBOARD ============ -->
+    <div class="dv-opt" id="2c">
+      <div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Instrument dashboard — filled envelopes + output meters</div>
+      <p class="dv-odesc">A denser, modern read: each operator tile pairs a filled-area EG contour with a horizontal output-level meter, so relative loudness reads at a glance. Pitch EG is a filled graph; numbers still sit under every visual.</p>
+      <div class="dv-card" style="width:1200px;background:#0a0c0f;border:1px solid #242a31;border-radius:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);">
+
+        <div style="display:flex;align-items:center;gap:22px;padding:22px 30px;background:#101317;border-bottom:1px solid #1c2127;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:13px;">
+            <div style="width:38px;height:38px;border-radius:8px;background:#2fe3c2;display:flex;align-items:center;justify-content:center;color:#06231d;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">DX</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:23px;font-weight:600;letter-spacing:-.01em;margin:0;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">MELLOW HORN</h1>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.04em;color:#2fe3c2;background:rgba(47,227,194,0.10);border:1px solid rgba(47,227,194,0.3);padding:3px 8px;border-radius:6px;"><i class="fa-solid fa-wave-square" style="font-size:9px;"></i> VOICE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.04em;margin-top:4px;">ROM1A.SYX · POS 01 · ALG 2</div>
+            </div>
+          </div>
+          <div style="position:relative;width:80px;height:56px;flex-shrink:0;">
+            <sc-for list="{{ algNodes }}" as="n" hint-placeholder-count="6">
+              <div style="position:absolute;width:20px;height:20px;top:{{ n.top }};left:{{ n.left }};border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;background:{{ n.bg }};border:1px solid {{ n.border }};color:{{ n.color }};">{{ n.num }}</div>
+            </sc-for>
+            <sc-for list="{{ algLines }}" as="ln" hint-placeholder-count="3">
+              <div style="position:absolute;width:1px;height:14px;top:{{ ln.top }};left:{{ ln.left }};background:#313942;"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;margin-left:auto;border-left:1px solid #1c2127;">
+            <sc-for list="{{ keyStats }}" as="s" hint-placeholder-count="6">
+              <div style="padding:2px 16px;border-right:1px solid #1c2127;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.1em;margin-bottom:3px;">{{ s.l }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c7cdd2;font-weight:600;">{{ s.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:34px 30px 0;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">01</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Operators</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:38px;">
+            <sc-for list="{{ operators }}" as="op" hint-placeholder-count="6">
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:{{ op.dotColor }};flex-shrink:0;"></span>
+                    OP{{ op.num }}
+                    <sc-if value="{{ op.feedback }}" hint-placeholder-val="{{ false }}"><i class="fa-solid fa-rotate-right" style="font-size:9px;color:#2fe3c2;"></i></sc-if>
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;">{{ op.tag }}</span>
+                </div>
+                <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:6px 8px 2px;margin-bottom:12px;">{{ op.egFill }}</div>
+                <div style="margin-bottom:12px;">
+                  <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.06em;margin-bottom:5px;"><span>OUTPUT LEVEL</span><span style="color:#c0c7cd;">{{ op.level }}</span></div>
+                  <div style="height:7px;background:#0b0d10;border:1px solid #1c2127;border-radius:4px;overflow:hidden;"><div style="height:100%;width:{{ op.meterPct }};background:#2fe3c2;"></div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;">
+                  <span style="color:#5a636b;">EG-R</span><span style="color:#c0c7cd;text-align:right;">{{ op.egRStr }}</span>
+                  <span style="color:#5a636b;">EG-L</span><span style="color:#c0c7cd;text-align:right;">{{ op.egLStr }}</span>
+                </div>
+                <div style="border-top:1px solid #1c2127;margin-top:10px;padding-top:9px;display:flex;flex-direction:column;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#79828a;">
+                  <div>{{ op.oscLine }} · RS {{ op.rateScaling }}</div>
+                  <div>{{ op.scalingLine }}</div>
+                  <div>{{ op.sensLine }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:0 30px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">02</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Modulation</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ lfoGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ lfoGroup.title }}</span>
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">TRIANGLE</span>
+              </div>
+              <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:12px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;">{{ lfoWave }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;">
+                <sc-for list="{{ lfoGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:12px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid fa-chart-line" style="color:#b58cff;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Pitch EG</span>
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">RANGE {{ pitchEG.range }}</span>
+              </div>
+              <div style="background:#0b0d10;border:1px solid #1c2127;border-radius:8px;padding:10px 12px 4px;margin-bottom:14px;">{{ pitchEG.svgFill }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px 24px;font-family:'JetBrains Mono',monospace;font-size:11.5px;">
+                <span style="color:#5a636b;">RATES <span style="color:#c0c7cd;">{{ pitchEG.ratesStr }}</span></span>
+                <span style="color:#5a636b;">LEVELS <span style="color:#c0c7cd;">{{ pitchEG.levelsStr }}</span></span>
+                <span style="color:#5a636b;">VELOCITY <span style="color:#c0c7cd;">{{ pitchEG.velocity }}</span></span>
+                <span style="color:#5a636b;">RATE SCL <span style="color:#c0c7cd;">{{ pitchEG.rateScaling }}</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 30px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">03</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Key Mode, Pitch Bend &amp; Portamento</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:38px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ keyModeGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ keyModeGroup.title }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ keyModeGroup.rows }}" as="row" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ pitchBendGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ pitchBendGroup.title }}</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                <sc-for list="{{ pitchBendGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 30px 38px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">04</span>
+            <h2 style="font-size:19px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Controllers</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersA.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersA.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersA.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersA.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><i class="fa-solid {{ controllersB.icon }}" style="color:#2fe3c2;font-size:12px;"></i><span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersB.title }}</span></div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr><th style="width:44px;"></th><sc-for list="{{ controllersB.valueCols }}" as="c" hint-placeholder-count="4"><th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ controllersB.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;">{{ controllersB.note }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "add a keyboard level-scaling curve per operator" · "make <a href="#2b">2b</a> the direction and tune the etched style" · "colour each operator's envelope by carrier vs modulator" · "combine <a href="#2a">2a</a>'s grid with <a href="#2b">2b</a>'s labelled graphs"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Voice Parameters page — 3 layout directions</span></div>
+  <p class="dv-tdesc">Full parameter view for a single voice: Algorithm &amp; global settings, all 6 operators (Oscillator · Envelope · Output/Scaling · Sensitivity), LFO, Pitch EG, Key Mode, Pitch Bend &amp; Portamento, and Controllers (BC/AT/MW, FC1/FC2/MIDI). Sample voice: <span style="font-family:ui-monospace,monospace;color:#c7cdd2;">MELLOW HORN</span>, from the Section 4 walkthrough. Built on the existing dark DX7 design system tokens.</p>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Operator matrix — dense spreadsheet grid</div>
+      <p class="dv-odesc">Every operator is one row in a wide, sortable-feeling matrix table — maximally scannable, side-by-side comparison across all 6. Global modulation &amp; controllers live in a persistent right rail.</p>
+      <div class="dv-card" style="width:1220px;background:#0a0c0f;border:1px solid #242a31;border-radius:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);">
+
+        <!-- header -->
+        <div style="display:flex;align-items:center;gap:24px;padding:22px 28px;background:#101317;border-bottom:1px solid #1c2127;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:40px;height:40px;border-radius:8px;background:#2fe3c2;display:flex;align-items:center;justify-content:center;color:#06231d;font-weight:700;font-size:14px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">DX</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:25px;font-weight:600;letter-spacing:-.01em;margin:0;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">MELLOW HORN</h1>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;color:#2fe3c2;background:rgba(47,227,194,0.10);border:1px solid rgba(47,227,194,0.3);padding:3px 9px;border-radius:6px;"><i class="fa-solid fa-wave-square" style="font-size:9px;"></i> VOICE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;letter-spacing:.04em;margin-top:5px;">ROM1A.SYX · POS 01 · C:/Music/DX7/Factory/ROM1</div>
+            </div>
+          </div>
+
+          <div style="position:relative;width:88px;height:60px;flex-shrink:0;">
+            <sc-for list="{{ algNodes }}" as="n" hint-placeholder-count="6">
+              <div style="position:absolute;width:22px;height:22px;top:{{ n.top }};left:{{ n.left }};border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;background:{{ n.bg }};border:1px solid {{ n.border }};color:{{ n.color }};">{{ n.num }}</div>
+            </sc-for>
+            <sc-for list="{{ algLines }}" as="ln" hint-placeholder-count="3">
+              <div style="position:absolute;width:1px;height:14px;top:{{ ln.top }};left:{{ ln.left }};background:#313942;"></div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;margin-left:auto;border-left:1px solid #1c2127;">
+            <sc-for list="{{ keyStats }}" as="s" hint-placeholder-count="6">
+              <div style="padding:2px 18px;border-right:1px solid #1c2127;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.1em;margin-bottom:4px;">{{ s.l }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13.5px;color:#c7cdd2;font-weight:600;">{{ s.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- body -->
+        <div style="display:flex;align-items:flex-start;">
+          <div style="flex:1;min-width:0;padding:24px;overflow-x:auto;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+              <i class="fa-solid fa-diagram-project" style="color:#2fe3c2;font-size:12px;"></i>
+              <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Operators</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;">6 total</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;min-width:900px;">
+              <thead>
+                <tr>
+                  <th rowSpan="2" style="text-align:left;vertical-align:bottom;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:#5a636b;font-weight:600;padding:8px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">OP</th>
+                  <th colSpan="4" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #1c2127;background:#0b0d10;">OSCILLATOR</th>
+                  <th colSpan="3" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #1c2127;background:#0b0d10;">ENVELOPE</th>
+                  <th colSpan="3" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #1c2127;background:#0b0d10;">OUTPUT &amp; SCALING</th>
+                  <th colSpan="2" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #1c2127;background:#0b0d10;">SENSITIVITY</th>
+                </tr>
+                <tr>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">MODE</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">COARSE</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">FINE</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">DETUNE</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">RATE SCL</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">RATES 1–4</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">LEVELS 1–4</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">MODE</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">LEVEL</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">DETAIL</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">KEY VEL</th>
+                  <th style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;font-weight:600;padding:6px 12px;border-bottom:1px solid #242a31;background:#0b0d10;">AM SENS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ operators }}" as="op" hint-placeholder-count="6">
+                  <tr style="border-bottom:1px solid #15191d;">
+                    <td style="padding:10px 12px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#eaedf0;white-space:nowrap;">
+                      <span style="display:inline-flex;align-items:center;gap:7px;">
+                        <span style="width:6px;height:6px;border-radius:50%;background:{{ op.dotColor }};flex-shrink:0;"></span>
+                        OP{{ op.num }}
+                        <sc-if value="{{ op.feedback }}" hint-placeholder-val="{{ false }}"><i class="fa-solid fa-rotate-right" style="font-size:9px;color:#2fe3c2;"></i></sc-if>
+                      </span>
+                    </td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.mode }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.coarse }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.fine }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.detuneStr }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.rateScaling }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;white-space:nowrap;">{{ op.egRStr }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;white-space:nowrap;">{{ op.egLStr }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.scalingMode }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#eaedf0;font-weight:600;white-space:nowrap;">{{ op.level }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#79828a;white-space:nowrap;">{{ op.detail }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.keyVel }}</td>
+                    <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#97a1aa;white-space:nowrap;">{{ op.amSens }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- sidebar -->
+          <div style="width:296px;flex-shrink:0;border-left:1px solid #1c2127;background:#0b0d10;padding:20px;">
+            <sc-for list="{{ groupsList }}" as="g" hint-placeholder-count="3">
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;margin-bottom:14px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                  <i class="fa-solid {{ g.icon }}" style="color:#2fe3c2;font-size:11px;"></i>
+                  <span style="font-size:13px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ g.title }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <sc-for list="{{ g.rows }}" as="row" hint-placeholder-count="4">
+                    <div style="display:flex;justify-content:space-between;gap:10px;">
+                      <span style="font-size:12px;color:#97a1aa;">{{ row.l }}</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c0c7cd;font-weight:500;text-align:right;">{{ row.v }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <i class="fa-solid fa-chart-line" style="color:#2fe3c2;font-size:11px;"></i>
+                <span style="font-size:13px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Pitch EG</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#97a1aa;">Range</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c0c7cd;">{{ pitchEG.range }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#97a1aa;">Velocity</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c0c7cd;">{{ pitchEG.velocity }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#97a1aa;">Rate Scaling</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c0c7cd;">{{ pitchEG.rateScaling }}</span></div>
+              </div>
+              <div style="display:flex;gap:16px;">
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">RATES</div>
+                  <div style="display:flex;align-items:flex-end;gap:4px;height:36px;">
+                    <sc-for list="{{ pitchEG.rateBars }}" as="b" hint-placeholder-count="4">
+                      <div style="width:12px;height:{{ b.h }};background:rgba(47,227,194,0.55);border-radius:2px 2px 0 0;"></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">LEVELS</div>
+                  <div style="display:flex;align-items:flex-end;gap:4px;height:36px;">
+                    <sc-for list="{{ pitchEG.levelBars }}" as="b" hint-placeholder-count="4">
+                      <div style="width:12px;height:{{ b.h }};background:rgba(181,140,255,0.55);border-radius:2px 2px 0 0;"></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <i class="fa-solid {{ controllersA.icon }}" style="color:#2fe3c2;font-size:11px;"></i>
+                <span style="font-size:13px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersA.title }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="width:34px;"></th>
+                    <sc-for list="{{ controllersA.valueCols }}" as="c" hint-placeholder-count="4">
+                      <th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.04em;padding:3px 4px;">{{ c }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ controllersA.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;font-weight:600;padding:5px 4px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <i class="fa-solid {{ controllersB.icon }}" style="color:#2fe3c2;font-size:11px;"></i>
+                <span style="font-size:13px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersB.title }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="width:34px;"></th>
+                    <sc-for list="{{ controllersB.valueCols }}" as="c" hint-placeholder-count="4">
+                      <th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.04em;padding:3px 4px;">{{ c }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ controllersB.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;font-weight:600;padding:5px 4px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">{{ controllersB.note }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Operator focus — tabs + progressive disclosure</div>
+      <p class="dv-odesc">Global parameters surface first as compact cards. Operators default to Operator 1 fully expanded (with its own sub-groups); Operators 2–6 collapse to a one-line summary you'd tap to open — calmer for a first read, still complete.</p>
+      <div class="dv-card" style="width:1220px;background:#0a0c0f;border:1px solid #242a31;border-radius:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);">
+
+        <!-- header -->
+        <div style="display:flex;align-items:center;gap:20px;padding:22px 28px;background:#101317;border-bottom:1px solid #1c2127;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:40px;height:40px;border-radius:8px;background:#2fe3c2;display:flex;align-items:center;justify-content:center;color:#06231d;font-weight:700;font-size:14px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">DX</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:25px;font-weight:600;letter-spacing:-.01em;margin:0;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">MELLOW HORN</h1>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;color:#2fe3c2;background:rgba(47,227,194,0.10);border:1px solid rgba(47,227,194,0.3);padding:3px 9px;border-radius:6px;"><i class="fa-solid fa-wave-square" style="font-size:9px;"></i> VOICE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;letter-spacing:.04em;margin-top:5px;">ROM1A.SYX · POS 01 · C:/Music/DX7/Factory/ROM1</div>
+            </div>
+          </div>
+
+          <div style="position:relative;width:88px;height:60px;flex-shrink:0;">
+            <sc-for list="{{ algNodes }}" as="n" hint-placeholder-count="6">
+              <div style="position:absolute;width:22px;height:22px;top:{{ n.top }};left:{{ n.left }};border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;background:{{ n.bg }};border:1px solid {{ n.border }};color:{{ n.color }};">{{ n.num }}</div>
+            </sc-for>
+            <sc-for list="{{ algLines }}" as="ln" hint-placeholder-count="3">
+              <div style="position:absolute;width:1px;height:14px;top:{{ ln.top }};left:{{ ln.left }};background:#313942;"></div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;">
+            <sc-for list="{{ keyStats }}" as="s" hint-placeholder-count="6">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;border:1px solid #242a31;padding:6px 12px;border-radius:999px;"><span style="color:#5a636b;">{{ s.l }}</span>{{ s.v }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- body -->
+        <div style="padding:28px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <i class="fa-solid fa-sliders" style="color:#2fe3c2;font-size:12px;"></i>
+            <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Global Parameters</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
+            <sc-for list="{{ groupsList }}" as="g" hint-placeholder-count="3">
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:18px 20px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px;">
+                  <i class="fa-solid {{ g.icon }}" style="color:#2fe3c2;font-size:11px;"></i>
+                  <span style="font-size:13.5px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ g.title }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <sc-for list="{{ g.rows }}" as="row" hint-placeholder-count="4">
+                    <div style="display:flex;justify-content:space-between;gap:10px;">
+                      <span style="font-size:12.5px;color:#97a1aa;">{{ row.l }}</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;font-weight:500;text-align:right;">{{ row.v }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:18px 20px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px;">
+                <i class="fa-solid fa-chart-line" style="color:#2fe3c2;font-size:11px;"></i>
+                <span style="font-size:13.5px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Pitch EG</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Range</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ pitchEG.range }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Velocity</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ pitchEG.velocity }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Rate Scaling</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ pitchEG.rateScaling }}</span></div>
+              </div>
+              <div style="display:flex;gap:16px;">
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">RATES</div>
+                  <div style="display:flex;align-items:flex-end;gap:4px;height:32px;">
+                    <sc-for list="{{ pitchEG.rateBars }}" as="b" hint-placeholder-count="4"><div style="width:11px;height:{{ b.h }};background:rgba(47,227,194,0.55);border-radius:2px 2px 0 0;"></div></sc-for>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">LEVELS</div>
+                  <div style="display:flex;align-items:flex-end;gap:4px;height:32px;">
+                    <sc-for list="{{ pitchEG.levelBars }}" as="b" hint-placeholder-count="4"><div style="width:11px;height:{{ b.h }};background:rgba(181,140,255,0.55);border-radius:2px 2px 0 0;"></div></sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:18px 20px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+                <i class="fa-solid {{ controllersA.icon }}" style="color:#2fe3c2;font-size:11px;"></i>
+                <span style="font-size:13px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersA.title }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="width:34px;"></th>
+                    <sc-for list="{{ controllersA.valueCols }}" as="c" hint-placeholder-count="4">
+                      <th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.04em;padding:3px 4px;">{{ c }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ controllersA.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;font-weight:600;padding:5px 4px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:18px 20px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+                <i class="fa-solid {{ controllersB.icon }}" style="color:#2fe3c2;font-size:11px;"></i>
+                <span style="font-size:13px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersB.title }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="width:34px;"></th>
+                    <sc-for list="{{ controllersB.valueCols }}" as="c" hint-placeholder-count="4">
+                      <th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.04em;padding:3px 4px;">{{ c }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ controllersB.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;font-weight:600;padding:5px 4px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;padding:5px 4px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;">{{ controllersB.note }}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <i class="fa-solid fa-diagram-project" style="color:#2fe3c2;font-size:12px;"></i>
+            <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Operators</span>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:#06231d;background:#2fe3c2;padding:8px 16px;border-radius:999px;">OP 1 <span style="opacity:.7;font-weight:500;">CARRIER</span></span>
+            <sc-for list="{{ opsRest }}" as="op" hint-placeholder-count="5">
+              <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#97a1aa;border:1px solid #242a31;padding:8px 16px;border-radius:999px;">OP {{ op.num }} <span style="opacity:.6;">{{ op.tag }}</span></span>
+            </sc-for>
+          </div>
+
+          <div style="background:#0b0d10;border:1px solid #242a31;border-radius:12px;padding:24px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+              <span style="font-size:16px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Operator 1</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#2fe3c2;background:rgba(47,227,194,.1);border:1px solid rgba(47,227,194,.3);padding:2px 8px;border-radius:6px;">CARRIER</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.1em;margin-bottom:10px;">OSCILLATOR</div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Mode</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.mode }}</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Frequency Coarse</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.coarse }}</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Frequency Fine</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.fine }}</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Detune</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.detuneStr }}</span></div>
+                </div>
+              </div>
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.1em;margin-bottom:10px;">ENVELOPE</div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="font-size:12.5px;color:#97a1aa;">Rate Scaling</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.rateScaling }}</span></div>
+                <div style="display:flex;gap:16px;">
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">RATES</div>
+                    <div style="display:flex;align-items:flex-end;gap:4px;height:30px;">
+                      <sc-for list="{{ op1.rateBars }}" as="b" hint-placeholder-count="4"><div style="width:11px;height:{{ b.h }};background:rgba(47,227,194,0.55);border-radius:2px 2px 0 0;"></div></sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">LEVELS</div>
+                    <div style="display:flex;align-items:flex-end;gap:4px;height:30px;">
+                      <sc-for list="{{ op1.levelBars }}" as="b" hint-placeholder-count="4"><div style="width:11px;height:{{ b.h }};background:rgba(181,140,255,0.55);border-radius:2px 2px 0 0;"></div></sc-for>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.1em;margin-bottom:10px;">OUTPUT &amp; SCALING</div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Scaling Mode</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.scalingMode }}</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Output Level</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.level }}</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Detail</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#c0c7cd;text-align:right;">{{ op1.detail }}</span></div>
+                </div>
+              </div>
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:16px 18px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.1em;margin-bottom:10px;">SENSITIVITY</div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">Key Velocity</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.keyVel }}</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="font-size:12.5px;color:#97a1aa;">AM Sensitivity</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c0c7cd;">{{ op1.amSens }}</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:1px;background:#1c2127;border:1px solid #1c2127;border-radius:10px;overflow:hidden;">
+            <sc-for list="{{ opsRest }}" as="op" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;background:#0b0d10;">
+                <i class="fa-solid fa-chevron-right" style="font-size:9px;color:#5a636b;flex-shrink:0;"></i>
+                <span style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:#c7cdd2;width:56px;flex-shrink:0;">OP {{ op.num }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;width:76px;flex-shrink:0;">{{ op.tag }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#79828a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ op.summaryLine }}</span>
+                <i class="fa-solid fa-expand" style="font-size:10px;color:#5a636b;flex-shrink:0;"></i>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Spec sheet — editorial reference document</div>
+      <p class="dv-odesc">Reads top-to-bottom like a printed patch sheet: six equal operator cards side by side, then Modulation, Key Mode/Pitch Bend, and Controllers as generously-spaced numbered sections — continuing the report's own visual language.</p>
+      <div class="dv-card" style="width:1220px;background:#0a0c0f;border:1px solid #242a31;border-radius:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);">
+
+        <!-- header -->
+        <div style="padding:36px 40px 28px;border-bottom:1px solid #242a31;">
+          <div style="display:flex;align-items:center;gap:10px;color:#5a636b;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;margin-bottom:20px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#2fe3c2;"></span> Voice Parameter Sheet
+          </div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                <h1 style="font-size:34px;font-weight:600;letter-spacing:-.02em;margin:0;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">MELLOW HORN</h1>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;color:#2fe3c2;background:rgba(47,227,194,0.10);border:1px solid rgba(47,227,194,0.3);padding:3px 9px;border-radius:6px;"><i class="fa-solid fa-wave-square" style="font-size:9px;"></i> VOICE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#5a636b;">ROM1A.SYX · Position 01 · C:/Music/DX7/Factory/ROM1</div>
+            </div>
+            <div style="position:relative;width:100px;height:66px;flex-shrink:0;">
+              <sc-for list="{{ algNodes }}" as="n" hint-placeholder-count="6">
+                <div style="position:absolute;width:24px;height:24px;top:{{ n.top }};left:{{ n.left }};border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;background:{{ n.bg }};border:1px solid {{ n.border }};color:{{ n.color }};"><sc-if value="{{ n.scaled }}" hint-placeholder-val="{{ true }}">{{ n.num }}</sc-if></div>
+              </sc-for>
+              <sc-for list="{{ algLines }}" as="ln" hint-placeholder-count="3">
+                <div style="position:absolute;width:1px;height:16px;top:{{ ln.top }};left:{{ ln.left }};background:#313942;"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;border-top:1px solid #242a31;margin-top:26px;">
+            <sc-for list="{{ keyStats }}" as="s" hint-placeholder-count="6">
+              <div style="flex:1;min-width:130px;padding:18px 20px 0 0;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5a636b;letter-spacing:.14em;margin-bottom:7px;">{{ s.l }}</div>
+                <div style="font-size:15px;color:#c7cdd2;font-family:'JetBrains Mono',monospace;font-weight:600;">{{ s.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- 01 operators -->
+        <div style="padding:40px 40px 0;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">01</span>
+            <h2 style="font-size:20px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Operators</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px;">
+            <sc-for list="{{ operators }}" as="op" hint-placeholder-count="6">
+              <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:18px 20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <span style="display:inline-flex;align-items:center;gap:7px;font-size:15px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:{{ op.dotColor }};flex-shrink:0;"></span>
+                    OP{{ op.num }}
+                    <sc-if value="{{ op.feedback }}" hint-placeholder-val="{{ false }}"><i class="fa-solid fa-rotate-right" style="font-size:9px;color:#2fe3c2;"></i></sc-if>
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;">{{ op.tag }}</span>
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#97a1aa;margin-bottom:12px;">{{ op.oscLine }}</div>
+                <div style="display:flex;gap:14px;margin-bottom:12px;align-items:flex-end;">
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;margin-bottom:5px;">RATES</div>
+                    <div style="display:flex;align-items:flex-end;gap:3px;height:28px;">
+                      <sc-for list="{{ op.rateBars }}" as="b" hint-placeholder-count="4"><div style="width:9px;height:{{ b.h }};background:rgba(47,227,194,0.5);border-radius:2px 2px 0 0;"></div></sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;margin-bottom:5px;">LEVELS</div>
+                    <div style="display:flex;align-items:flex-end;gap:3px;height:28px;">
+                      <sc-for list="{{ op.levelBars }}" as="b" hint-placeholder-count="4"><div style="width:9px;height:{{ b.h }};background:rgba(181,140,255,0.5);border-radius:2px 2px 0 0;"></div></sc-for>
+                    </div>
+                  </div>
+                  <div style="margin-left:auto;text-align:right;">
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#5a636b;letter-spacing:.08em;margin-bottom:5px;">LEVEL</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:17px;color:#eaedf0;font-weight:600;">{{ op.level }}</div>
+                  </div>
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#79828a;margin-bottom:5px;">{{ op.scalingLine }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#79828a;">{{ op.sensLine }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- 02 modulation -->
+        <div style="padding:0 40px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">02</span>
+            <h2 style="font-size:20px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Modulation</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:40px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ lfoGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ lfoGroup.title }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                <sc-for list="{{ lfoGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid fa-chart-line" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">Pitch EG</span>
+              </div>
+              <div style="display:flex;gap:24px;align-items:flex-start;">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;gap:16px;"><span style="font-size:13px;color:#97a1aa;">Range</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;">{{ pitchEG.range }}</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:16px;"><span style="font-size:13px;color:#97a1aa;">Velocity</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;">{{ pitchEG.velocity }}</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:16px;"><span style="font-size:13px;color:#97a1aa;">Rate Scaling</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;">{{ pitchEG.rateScaling }}</span></div>
+                </div>
+                <div style="display:flex;gap:20px;margin-left:auto;">
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">RATES</div>
+                    <div style="display:flex;align-items:flex-end;gap:5px;height:40px;">
+                      <sc-for list="{{ pitchEG.rateBars }}" as="b" hint-placeholder-count="4"><div style="width:13px;height:{{ b.h }};background:rgba(47,227,194,0.55);border-radius:2px 2px 0 0;"></div></sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5a636b;letter-spacing:.08em;margin-bottom:6px;">LEVELS</div>
+                    <div style="display:flex;align-items:flex-end;gap:5px;height:40px;">
+                      <sc-for list="{{ pitchEG.levelBars }}" as="b" hint-placeholder-count="4"><div style="width:13px;height:{{ b.h }};background:rgba(181,140,255,0.55);border-radius:2px 2px 0 0;"></div></sc-for>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 03 key mode / pitch bend -->
+        <div style="padding:0 40px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">03</span>
+            <h2 style="font-size:20px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Key Mode, Pitch Bend &amp; Portamento</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:40px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ keyModeGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ keyModeGroup.title }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ keyModeGroup.rows }}" as="row" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ pitchBendGroup.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ pitchBendGroup.title }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                <sc-for list="{{ pitchBendGroup.rows }}" as="row" hint-placeholder-count="7">
+                  <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="font-size:13px;color:#97a1aa;">{{ row.l }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:500;">{{ row.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 04 controllers -->
+        <div style="padding:0 40px 40px;">
+          <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#2fe3c2;letter-spacing:.1em;">04</span>
+            <h2 style="font-size:20px;font-weight:600;color:#eaedf0;margin:0;font-family:'Space Grotesk',sans-serif;">Controllers</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ controllersA.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersA.title }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="width:44px;"></th>
+                    <sc-for list="{{ controllersA.valueCols }}" as="c" hint-placeholder-count="4">
+                      <th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ controllersA.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <div style="background:#101317;border:1px solid #242a31;border-radius:10px;padding:20px 22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="fa-solid {{ controllersB.icon }}" style="color:#2fe3c2;font-size:12px;"></i>
+                <span style="font-size:14px;font-weight:600;color:#eaedf0;font-family:'Space Grotesk',sans-serif;">{{ controllersB.title }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="width:44px;"></th>
+                    <sc-for list="{{ controllersB.valueCols }}" as="c" hint-placeholder-count="4">
+                      <th style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5a636b;letter-spacing:.06em;padding:5px 6px;">{{ c }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ controllersB.rows }}" as="r" hint-placeholder-count="3">
+                    <tr style="border-top:1px solid #1c2127;">
+                      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c0c7cd;font-weight:600;padding:7px 6px;">{{ r.src }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.pm }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.am }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.eg }}</td>
+                      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:#97a1aa;padding:7px 6px;">{{ r.extra }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#5a636b;">{{ controllersB.note }}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "combine the matrix from <a href="#1a">1a</a> with the section rhythm of <a href="#1c">1c</a>" · "make <a href="#1b">1b</a> the primary direction and refine it" · "show algorithm 2's real operator routing" · "explore more layout variety"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const bar = (v, max) => Math.round((v/99)*max) + 'px';
+
+    const _e = React.createElement;
+    // DX7-style 4-rate / 4-level envelope drawn as an SVG contour: L4→R1→L1→R2→L2→R3→L3(sustain)→KEY OFF→R4→L4
+    const envSvg = (rates, levels, o) => {
+      o = o || {};
+      const W = o.W || 320, H = o.H || 78, stroke = o.stroke || '#2fe3c2', sw = o.sw || 1.75;
+      const padT = o.labels ? 18 : 8, padB = o.keyText ? 18 : 12;
+      const padL = o.labels ? 20 : 6, padR = o.labels ? 20 : 6;
+      const x0 = padL, x1 = W - padR, yTop = padT, yBot = H - padB;
+      const yOf = (lv) => yBot - (lv / 99) * (yBot - yTop);
+      const L1 = levels[0], L2 = levels[1], L3 = levels[2], L4 = levels[3];
+      const R1 = rates[0], R2 = rates[1], R3 = rates[2], R4 = rates[3];
+      const t1 = Math.abs(L1 - L4) / Math.max(R1, 3);
+      const t2 = Math.abs(L2 - L1) / Math.max(R2, 3);
+      const t3 = Math.abs(L3 - L2) / Math.max(R3, 3);
+      const preSum = (t1 + t2 + t3) || 1, innerW = x1 - x0;
+      const preW = innerW * 0.54, susW = innerW * 0.16, relW = innerW * 0.30;
+      const w1 = preW * t1 / preSum, w2 = preW * t2 / preSum, w3 = preW * t3 / preSum;
+      const P = [[x0, yOf(L4)], [x0 + w1, yOf(L1)], [x0 + w1 + w2, yOf(L2)], [x0 + w1 + w2 + w3, yOf(L3)]];
+      const keyOffX = P[3][0] + susW;
+      P.push([keyOffX, yOf(L3)]);
+      P.push([keyOffX + relW, yOf(L4)]);
+      const rnd = (n) => Math.round(n * 10) / 10;
+      const pts = P.map(p => rnd(p[0]) + ',' + rnd(p[1])).join(' ');
+      const k = [];
+      if (o.grid) { for (let i = 0; i < 4; i++) { const y = yTop + i * ((yBot - yTop) / 3); k.push(_e('line', { key: 'g' + i, x1: padL - 2, y1: y, x2: W - padR + 2, y2: y, stroke: '#1c2127', strokeWidth: 1 })); } }
+      if (o.keys) {
+        k.push(_e('line', { key: 'kon', x1: P[0][0], y1: yTop, x2: P[0][0], y2: yBot, stroke: '#3a434c', strokeWidth: 1, strokeDasharray: '2 3', vectorEffect: 'non-scaling-stroke' }));
+        k.push(_e('line', { key: 'koff', x1: keyOffX, y1: yTop, x2: keyOffX, y2: yBot, stroke: '#3a434c', strokeWidth: 1, strokeDasharray: '2 3', vectorEffect: 'non-scaling-stroke' }));
+      }
+      k.push(_e('line', { key: 'base', x1: 0, y1: yBot, x2: W, y2: yBot, stroke: '#242a31', strokeWidth: 1 }));
+      if (o.fill) { const area = pts + ' ' + rnd(P[5][0]) + ',' + yBot + ' ' + rnd(P[0][0]) + ',' + yBot; k.push(_e('polygon', { key: 'fill', points: area, fill: o.fill, stroke: 'none' })); }
+      k.push(_e('polyline', { key: 'ln', points: pts, fill: 'none', stroke: stroke, strokeWidth: sw, strokeLinejoin: 'round', strokeLinecap: 'round', vectorEffect: 'non-scaling-stroke' }));
+      const dot = (p, key) => _e('circle', { key: key, cx: rnd(p[0]), cy: rnd(p[1]), r: o.labels ? 2.4 : 1.9, fill: stroke });
+      k.push(dot(P[1], 'd1'), dot(P[2], 'd2'), dot(P[3], 'd3'));
+      if (o.labels) {
+        const tf = 'JetBrains Mono, monospace', tc = '#8a929b';
+        const T = (x, y, s, a) => _e('text', { key: 't_' + s + '_' + Math.round(x) + '_' + Math.round(y), x: rnd(x), y: rnd(y), fontSize: 9, fill: tc, fontFamily: tf, textAnchor: a || 'middle' }, s);
+        k.push(T(P[1][0], P[1][1] - 6, 'L1'));
+        k.push(T(P[2][0], P[2][1] - 6, 'L2'));
+        k.push(T(P[3][0], P[3][1] - 6, 'L3'));
+        k.push(T(P[0][0], P[0][1] - 6, 'L4', 'start'));
+        k.push(T(P[5][0], P[5][1] - 6, 'L4', 'end'));
+        k.push(T((P[0][0] + P[1][0]) / 2 - 5, (P[0][1] + P[1][1]) / 2, 'R1', 'end'));
+        k.push(T((P[1][0] + P[2][0]) / 2 + 5, (P[1][1] + P[2][1]) / 2, 'R2', 'start'));
+        k.push(T((P[2][0] + P[3][0]) / 2, (P[2][1] + P[3][1]) / 2 - 5, 'R3'));
+        k.push(T((P[4][0] + P[5][0]) / 2 + 4, (P[4][1] + P[5][1]) / 2, 'R4', 'start'));
+      }
+      if (o.keyText) {
+        const tf = 'JetBrains Mono, monospace';
+        k.push(_e('text', { key: 'kont', x: P[0][0], y: H - 4, fontSize: 8.5, fill: '#5a636b', fontFamily: tf, textAnchor: 'start' }, 'KEY ON'));
+        k.push(_e('text', { key: 'kofft', x: keyOffX, y: H - 4, fontSize: 8.5, fill: '#5a636b', fontFamily: tf, textAnchor: 'middle' }, 'KEY OFF'));
+      }
+      return _e('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: H, preserveAspectRatio: 'none', style: { display: 'block', overflow: 'visible' } }, k);
+    };
+
+    const waveSvg = (shape, o) => {
+      o = o || {};
+      const W = o.W || 120, H = o.H || 44, stroke = o.stroke || '#2fe3c2', sw = o.sw || 1.75;
+      const midY = H / 2, amp = H / 2 - 6, cyc = 2, seg = W / (cyc * 2);
+      let pts = [];
+      if (/tri/i.test(shape)) { for (let i = 0; i <= cyc * 2; i++) { pts.push([i * seg, i % 2 === 0 ? midY + amp : midY - amp]); } }
+      else if (/saw/i.test(shape)) { for (let i = 0; i < cyc; i++) { pts.push([i * seg * 2, midY + amp]); pts.push([(i + 1) * seg * 2 - 0.5, midY - amp]); pts.push([(i + 1) * seg * 2, midY + amp]); } }
+      else if (/squ/i.test(shape)) { let up = false; for (let i = 0; i <= cyc * 2; i++) { const x = i * seg; pts.push([x, up ? midY - amp : midY + amp]); pts.push([x, up ? midY + amp : midY - amp]); up = !up; } }
+      else { for (let i = 0; i <= 48; i++) { const x = W * i / 48; const y = midY - Math.sin((i / 48) * Math.PI * 2 * cyc) * amp; pts.push([x, y]); } }
+      const rnd = (n) => Math.round(n * 10) / 10;
+      const s = pts.map(p => rnd(p[0]) + ',' + rnd(p[1])).join(' ');
+      return _e('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, preserveAspectRatio: 'none', style: { display: 'block' } }, [
+        _e('polyline', { key: 'w', points: s, fill: 'none', stroke: stroke, strokeWidth: sw, strokeLinejoin: 'round', strokeLinecap: 'round', vectorEffect: 'non-scaling-stroke' })
+      ]);
+    };
+
+    const keyStats = [
+      { l:'ALGORITHM', v:'2' },
+      { l:'FEEDBACK', v:'7' },
+      { l:'OSC SYNC', v:'On' },
+      { l:'TRANSPOSE', v:'C2' },
+      { l:'KEY MODE', v:'Poly' },
+      { l:'P.MOD SENS', v:'2' },
+    ];
+
+    const algNodes = [
+      { num:6, top:'0px',  left:'0px',  bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:5, top:'0px',  left:'33px', bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:4, top:'0px',  left:'66px', bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:3, top:'38px', left:'0px',  bg:'#161a1f', border:'#313942', color:'#97a1aa', fb:false, scaled:true },
+      { num:2, top:'38px', left:'33px', bg:'rgba(47,227,194,0.12)', border:'#2fe3c2', color:'#2fe3c2', fb:true, scaled:true },
+      { num:1, top:'38px', left:'66px', bg:'rgba(47,227,194,0.12)', border:'#2fe3c2', color:'#2fe3c2', fb:false, scaled:true },
+    ];
+    const algLines = [ { top:'22px', left:'10px' }, { top:'22px', left:'43px' }, { top:'22px', left:'76px' } ];
+
+    const opsRaw = [
+      { num:1, tag:'Carrier',   feedback:false, mode:'Ratio', coarse:'1.00',  fine:'1.00', detune:0,  rateScaling:2, egR:[54,35,19,60], egL:[99,97,94,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/0',  level:97, keyVel:1, amSens:0 },
+      { num:2, tag:'Carrier',   feedback:true,  mode:'Ratio', coarse:'1.00',  fine:'0.02', detune:3,  rateScaling:2, egR:[58,39,22,58], egL:[92,88,90,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/12', level:88, keyVel:2, amSens:0 },
+      { num:3, tag:'Modulator', feedback:false, mode:'Ratio', coarse:'2.00',  fine:'0.00', detune:-2, rateScaling:3, egR:[70,45,30,65], egL:[70,60,55,0],  scalingMode:'Normal',     detail:'BP C3 · L -LIN/0 · R -EXP/30',  level:62, keyVel:3, amSens:1 },
+      { num:4, tag:'Modulator', feedback:false, mode:'Ratio', coarse:'1.00',  fine:'0.00', detune:0,  rateScaling:1, egR:[65,40,25,60], egL:[80,75,70,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/0',  level:71, keyVel:1, amSens:0 },
+      { num:5, tag:'Modulator', feedback:false, mode:'Fixed', coarse:'14.00', fine:'0.00', detune:0,  rateScaling:0, egR:[99,20,20,50], egL:[45,40,40,0],  scalingMode:'Normal',     detail:'BP A-1 · L -LIN/0 · R -LIN/0',  level:38, keyVel:0, amSens:2 },
+      { num:6, tag:'Modulator', feedback:false, mode:'Ratio', coarse:'3.00',  fine:'0.00', detune:0,  rateScaling:2, egR:[99,30,20,45], egL:[60,55,50,0],  scalingMode:'Fractional', detail:'OFS +0 · LVL 251',              level:55, keyVel:1, amSens:0 },
+    ];
+
+    const operators = opsRaw.map(o => {
+      const detuneStr = o.detune > 0 ? ('+' + o.detune) : String(o.detune);
+      const egRStr = o.egR.join(' · ');
+      const egLStr = o.egL.join(' · ');
+      const rateBars = o.egR.map((v,i)=>({ n:'R'+(i+1), h:bar(v,28) }));
+      const levelBars = o.egL.map((v,i)=>({ n:'L'+(i+1), h:bar(v,28) }));
+      return {
+        ...o, detuneStr, egRStr, egLStr, rateBars, levelBars,
+        dotColor: o.tag === 'Carrier' ? '#2fe3c2' : '#5a636b',
+        scalingLine: o.scalingMode.toUpperCase() + ' · ' + o.detail,
+        oscLine: o.mode.toUpperCase() + ' ' + o.coarse + '/' + o.fine + ' · DET ' + detuneStr,
+        sensLine: 'KEY VEL ' + o.keyVel + ' · AM SENS ' + o.amSens,
+        summaryLine: o.mode.toUpperCase() + ' ' + o.coarse + ' · LVL ' + o.level + ' · EG-R ' + egRStr + ' · EG-L ' + egLStr,
+      };
+    });
+
+    operators.forEach(o => {
+      o.egLine  = envSvg(o.egR, o.egL, { W:320, H:78,  stroke:'#2fe3c2', sw:1.75, keys:true });
+      o.egFill  = envSvg(o.egR, o.egL, { W:320, H:74,  stroke:'#2fe3c2', sw:1.75, keys:true, fill:'rgba(47,227,194,0.14)' });
+      o.egPanel = envSvg(o.egR, o.egL, { W:380, H:104, stroke:'#d6dbe0', sw:1.5,  keys:true, grid:true, labels:true, keyText:true });
+      o.meterPct = Math.round(o.level / 99 * 100) + '%';
+    });
+
+    const groupsList = [
+      { icon:'fa-square-wave', title:'LFO', rows:[
+        {l:'Wave',v:'Triangle'},{l:'Speed',v:'30'},{l:'Delay',v:'0'},{l:'Mode',v:'Multi'},
+        {l:'PM Depth',v:'0'},{l:'AM Depth',v:'0'},{l:'Key Sync',v:'Off'},
+      ]},
+      { icon:'fa-object-group', title:'Key Mode', rows:[
+        {l:'Assign',v:'Polyphonic'},{l:'Unison Detune',v:'0'},
+      ]},
+      { icon:'fa-arrows-left-right', title:'Pitch Bend & Portamento', rows:[
+        {l:'Bend Mode',v:'Normal'},{l:'Bend Range',v:'2 semi'},{l:'Bend Step',v:'0'},
+        {l:'Porta Mode',v:'Sus-Key P Retain'},{l:'Porta Time',v:'0'},{l:'Porta Step',v:'0'},{l:'Random Pitch',v:'2'},
+      ]},
+    ];
+    const lfoGroup = groupsList[0];
+    const keyModeGroup = groupsList[1];
+    const pitchBendGroup = groupsList[2];
+
+    const pitchEGRaw = { range:'8 oct', velocity:'Off', rateScaling:'0', rates:[99,95,95,99], levels:[50,48,50,50] };
+    const pitchEG = {
+      ...pitchEGRaw,
+      rateBars: pitchEGRaw.rates.map((v,i)=>({ n:'R'+(i+1), v, h:bar(v,36) })),
+      levelBars: pitchEGRaw.levels.map((v,i)=>({ n:'L'+(i+1), v, h:bar(v,36) })),
+    };
+    pitchEG.ratesStr  = pitchEG.rates.join(' · ');
+    pitchEG.levelsStr = pitchEG.levels.join(' · ');
+    pitchEG.svgLine   = envSvg(pitchEG.rates, pitchEG.levels, { W:560, H:150, stroke:'#b58cff', sw:2, keys:true, grid:true, labels:true, keyText:true });
+    pitchEG.svgFill   = envSvg(pitchEG.rates, pitchEG.levels, { W:560, H:150, stroke:'#b58cff', sw:2, keys:true, grid:true, labels:true, keyText:true, fill:'rgba(181,140,255,0.14)' });
+    pitchEG.svgPanel  = envSvg(pitchEG.rates, pitchEG.levels, { W:640, H:168, stroke:'#d6dbe0', sw:1.75, keys:true, grid:true, labels:true, keyText:true });
+    const lfoWave = waveSvg('Triangle', { W:130, H:46, stroke:'#2fe3c2', sw:1.9 });
+
+    const controllersA = {
+      icon:'fa-lungs', title:'Controllers · BC / AT / MW', valueCols:['PM','AM','EG BIAS','P.BIAS'],
+      rows: [
+        { src:'BC', pm:'0', am:'0', eg:'0', extra:'+0' },
+        { src:'AT', pm:'0', am:'0', eg:'63', extra:'+0' },
+        { src:'MW', pm:'31', am:'0', eg:'0', extra:'—' },
+      ],
+    };
+    const controllersB = {
+      icon:'fa-sliders', title:'Controllers · FC1 / FC2 / MIDI', valueCols:['PM','AM','EG BIAS','VOL'],
+      note:'FC1 → CS1: Off',
+      rows: [
+        { src:'FC1', pm:'0', am:'0', eg:'0', extra:'0' },
+        { src:'FC2', pm:'0', am:'0', eg:'0', extra:'99' },
+        { src:'MIDI', pm:'0', am:'0', eg:'0', extra:'0' },
+      ],
+    };
+
+    return {
+      keyStats, algNodes, algLines, operators, groupsList, lfoGroup, keyModeGroup, pitchBendGroup,
+      pitchEG, controllersA, controllersB, lfoWave,
+      op1: operators[0],
+      opsRest: operators.slice(1),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

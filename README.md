@@ -16,7 +16,7 @@ The DX7 Voice Browser scans a directory tree of `.syx` files, parses the binary 
 
 This project follows a documented design system. **All UI work — by any
 contributor or AI agent — must stay consistent with it.** Full spec:
-[`design_handoff_dx7_redesign/DESIGN_SYSTEM.md`](design_handoff_dx7_redesign/DESIGN_SYSTEM.md);
+[`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md);
 tokens: [`static/tokens.css`](static/tokens.css); agent guardrails:
 [`CLAUDE.md`](CLAUDE.md).
 
@@ -79,12 +79,14 @@ tokens: [`static/tokens.css`](static/tokens.css); agent guardrails:
 DX7_Voice_Browser/
 ├── app.py               # FastAPI backend — API routes and background scan runner
 ├── database.py          # SQLite helper — schema, CRUD operations
-├── parser.py            # Binary SysEx parser — extracts voice names and positions
+├── parser.py            # Binary SysEx scanner — voice names/positions + raw byte blocks
+├── voice_params.py      # Pure byte decoders — full voice parameters (see below)
 │
 ├── static/
 │   ├── index.html       # Single-page application shell
 │   ├── app.js           # Frontend logic — API calls, rendering, sorting, search
-│   └── style.css        # Dark/retro theme — glassmorphism, LCD display, animations
+│   ├── style.css        # Dark, token-driven design system (see DESIGN_SYSTEM.md)
+│   └── tokens.css       # `--ds-*` design tokens — colors, type, spacing, radius
 │
 ├── sample_patches/      # Sample SysEx files for testing/demo
 │   ├── ROM1A.syx        # DX7 ROM 1A factory bank (32 voices, headered)
@@ -92,8 +94,12 @@ DX7_Voice_Browser/
 │   └── Classic/
 │       └── DX7S_Bank.syx
 │
-├── test_parser.py       # Unit tests for parser.py (4 test cases)
-├── verify_scanner.py    # Integration test — recursive directory scan end-to-end
+├── test_parser.py        # Unit tests for parser.py (4 test cases)
+├── test_voice_params.py  # Unit tests for voice_params.py decoders + parser raw-block alignment
+├── verify_scanner.py     # Integration test — recursive directory scan end-to-end
+│
+├── DESIGN_SYSTEM.md      # Authoritative design system spec
+├── CLAUDE.md             # Agent guardrails / architecture guide
 │
 └── voices.db            # SQLite database (auto-created on first run)
 ```
@@ -141,11 +147,12 @@ Then open your browser to: **<http://127.0.0.1:8000>**
 7. **Browse grouped results** — The list shows **one row per unique (name, type) combination**. The **Type** column shows a colored badge (VOICE / PERF / GEN 2). The **Files** column shows how many `.syx` files contain that patch name.
 8. **View duplicate files** — Click the teal Files badge on any row to open the **Duplicate Files** panel, which lists every file that contains that patch, with its bank position and folder path. Each entry has a Reveal button.
 9. **Reveal in Explorer** — Click the folder icon on a main row or inside the duplicate panel to open Windows Explorer with that `.syx` file highlighted.
-10. **Clear Database** — Removes all entries. The next scan starts fresh.
-11. **Cleanup tab** — Click the **CLEANUP** tab to switch to the duplicate folder cleanup view. No rescan is needed — the analysis works from whatever is already in the database.
-12. **Find duplicate folders** — Click **FIND DUPLICATES** to analyze the database and identify folders with identical `.syx` content (same filenames and same voices at the same positions).
-13. **Choose which folder to keep** — Each duplicate group shows all matching folders. Select the one to keep using the radio button; the others are marked DEL.
-14. **Delete duplicates** — Click **DELETE UNSELECTED** on a group to permanently delete the unselected folder(s) and all their contents from disk. A confirmation dialog lists exactly what will be removed. This action is irreversible.
+10. **View voice parameters** — Click the (i) icon next to a Voice or Gen 2 Extended row (or a duplicate-files modal entry) to open the full-page **Voice Parameters** view — every operator, envelope, LFO, and (for Gen 2 Extended patches) key mode / pitch bend / portamento / controller setting. Not shown for Performance rows, since a performance isn't a single voice. Click **BACK** to return to whichever tab you were on.
+11. **Clear Database** — Removes all entries. The next scan starts fresh.
+12. **Cleanup tab** — Click the **CLEANUP** tab to switch to the duplicate folder cleanup view. No rescan is needed — the analysis works from whatever is already in the database.
+13. **Find duplicate folders** — Click **FIND DUPLICATES** to analyze the database and identify folders with identical `.syx` content (same filenames and same voices at the same positions).
+14. **Choose which folder to keep** — Each duplicate group shows all matching folders. Select the one to keep using the radio button; the others are marked DEL.
+15. **Delete duplicates** — Click **DELETE UNSELECTED** on a group to permanently delete the unselected folder(s) and all their contents from disk. A confirmation dialog lists exactly what will be removed. This action is irreversible.
 
 ---
 
@@ -179,6 +186,32 @@ User types in search box
      or "42 voices found" when under the limit
 ```
 
+### Voice Parameters Flow
+
+```
+User clicks the (i) "View Details" button on a voice row (or a duplicate-files
+modal entry) — hidden for Performance rows
+  → GET /api/voices/{id}/parameters
+  → Backend re-reads the source .syx file (parser.extract_voice_blocks()),
+    locates the exact voice by occurrence index (see below), and decodes it
+    (voice_params.build_voice_parameters())
+  → Frontend renders the full-page Voice Parameters view: 6 operators (with
+    envelope graphs), LFO, Pitch EG, and — for Gen 2 Extended patches — key
+    mode, pitch bend/portamento, and controller routing (BC/AT/MW/FC1/FC2/MIDI)
+  → Plain "Voice" patches show the documented power-on defaults for the
+    Gen-2-only sections (no $06 data exists for them at all), visually marked
+    as defaults (muted, italic values + a "DEFAULT VALUES" tag)
+```
+
+**Locating a specific voice's raw bytes:** the database stores no raw SysEx
+bytes and no bank index — only name/position/patch_type/file location. Since
+`parser.parse_syx_file()` is a pure function of a file's bytes and always
+returns voices in the same order, a DB row's 0-based rank among all other rows
+sharing its `file_path` (ordered by `id ASC`) is exactly that voice's index in
+a fresh call to `parser.extract_voice_blocks()` for the same file — see
+`database.get_voice_occurrence_index()`. No schema migration was needed to add
+this feature.
+
 ### SysEx Parsing Logic (`parser.py`)
 
 The parser scans every `.syx` file for Yamaha SysEx messages (`F0 43 0n <format_byte> ...`) and dispatches by format byte:
@@ -211,6 +244,32 @@ Within each 128-byte voice block, bytes 118–127 hold the 10-byte ASCII voice n
 2. **Headered PMEM** — Scans for `F0 43 xx 7E`; skips 10-byte body header, extracts performance names.
 3. **Headered AMEM** — Scans for `F0 43 xx 06`; assigns synthetic slot names, then merges with any VMEM bank in the same file.
 4. **Raw headerless dump** — If exactly 4096 bytes with no recognisable header, treats the whole file as a single VMEM bank.
+
+Internally, `parser.py` scans and merges VMEM/AMEM/PMEM messages through one
+shared function, `_scan_all_patches()`. `parse_syx_file()` (used by the scan
+flow above) returns just names/positions from it; `extract_voice_blocks()`
+(used by the Voice Parameters flow) returns the same list in the same order,
+but keeps the raw `_core_bytes` (128-byte VMEM record) / `_additional_bytes`
+(35-byte AMEM record) for each voice so they can be fully decoded.
+
+### Full Voice Parameter Decoding (`voice_params.py`)
+
+A separate, pure module (no file I/O) turns those raw byte blocks into every
+synthesis parameter — reusable by any future feature that needs full voice
+data (export, comparison, editing, etc.), independent of how the bytes were
+found in a file.
+
+| Function | Purpose |
+|----------|---------|
+| `decode_core_voice(core_bytes)` | Decodes a 128-byte VMEM record: algorithm, feedback, oscillator key sync, transpose, LFO, pitch EG, and all 6 operators (re-ordered from the on-disk OP6→OP1 storage order to logical OP1→OP6) |
+| `decode_additional_voice(additional_bytes)` | Decodes a 35-byte AMEM record: per-operator scaling mode/AM sensitivity, pitch EG range/velocity/rate-scaling, key mode & unison, pitch bend, portamento, and all 6 controller routings (BC/AT/MW/FC1/FC2/MIDI). Pass `None` (plain DX7 mkI voices have no AMEM block) to get the documented power-on defaults instead, with `"present": False` |
+| `build_voice_parameters(core_bytes, additional_bytes)` | Combines both into the full parameter model returned by the API |
+| `DX7_ALGORITHMS` | Static reference table: which operators are carriers vs modulators, and which one carries feedback, per algorithm 1–32 — drives the operator dot coloring/feedback icon on the Voice Parameters page. **Not** derived from the sysex bytes (the format only stores the algorithm *number*); reconstructed from general DX7 reference knowledge and only spot-checked against algorithm 2 (see Known Limitations) |
+
+Byte offsets and bit layouts follow
+`design_handoff_voice_parameters/yamaha_dx7s_sysex_specification_v2_1.md`
+sections 5 (core voice) and 6 (additional voice) exactly; see that file for the
+full byte-by-byte reference.
 
 ---
 
@@ -309,6 +368,7 @@ Results are grouped by `(voice_name, patch_type)` and sorted alphabetically. Ret
 {
   "voices": [
     {
+      "id": 42,
       "voice_name": "BASS 1",
       "patch_type": "Voice",
       "folder_path": "C:/Music/DX7_Patches/Classic",
@@ -322,6 +382,9 @@ Results are grouped by `(voice_name, patch_type)` and sorted alphabetically. Ret
 }
 ```
 
+- `id`: the primary key of one representative row for this `(voice_name, patch_type)`
+  group (the lowest `id` among matches) — pass it to
+  `GET /api/voices/{id}/parameters` to view its full synthesis parameters.
 - `patch_type`: `"Voice"`, `"Performance"`, or `"Gen 2 Extended"`
 - `file_count`: number of `.syx` files containing a patch with that name and type
 
@@ -341,6 +404,7 @@ Fetch all individual records matching a patch name (and optionally a type). Used
 ```json
 [
   {
+    "id": 42,
     "voice_name": "BASS 1",
     "patch_type": "Voice",
     "folder_path": "C:/Music/DX7_Patches/Classic",
@@ -352,6 +416,87 @@ Fetch all individual records matching a patch name (and optionally a type). Used
 ```
 
 Results are sorted by `file_name ASC, position ASC`. No row limit applies.
+Each entry's `id` can be passed to `GET /api/voices/{id}/parameters` — this is
+what powers the "View Details" button inside the duplicate-files modal.
+
+---
+
+### `GET /api/voices/{voice_id}/parameters`
+
+Returns the fully decoded synthesis parameters for a single voice, re-read from
+its source `.syx` file (see [Voice Parameters Flow](#voice-parameters-flow) and
+[`voice_params.py`](#full-voice-parameter-decoding-voice_paramspy) above).
+
+**Response** (trimmed — every operator has the full field set shown for OP1):
+
+```json
+{
+  "id": 42,
+  "voice_name": "BASS 1",
+  "patch_type": "Gen 2 Extended",
+  "folder_path": "C:/Music/DX7_Patches/Classic",
+  "file_name": "ROM1A.syx",
+  "file_path": "C:/Music/DX7_Patches/Classic/ROM1A.syx",
+  "position": 3,
+  "name": "BASS 1",
+  "algorithm": 2,
+  "algorithm_carriers": [1, 2],
+  "algorithm_feedback_op": 2,
+  "feedback": 7,
+  "osc_key_sync": true,
+  "transpose": 12,
+  "transpose_name": "C2",
+  "operators": [
+    {
+      "op": 1,
+      "eg_rate": [54, 35, 19, 60], "eg_level": [99, 97, 94, 0],
+      "break_point": 0, "break_point_name": "A-1",
+      "left_depth": 0, "right_depth": 0,
+      "left_curve": 0, "left_curve_name": "-LIN",
+      "right_curve": 0, "right_curve_name": "-LIN",
+      "rate_scaling": 2, "detune": 0,
+      "amp_mod_sens": 0, "vel_sens": 1,
+      "level": 97, "osc_mode": "Ratio", "freq_coarse": 1, "freq_fine": 0
+    }
+  ],
+  "pitch_eg": { "rate": [99, 95, 95, 99], "level": [50, 48, 50, 50] },
+  "lfo": {
+    "speed": 30, "delay": 0, "pmd": 0, "amd": 0, "sync": false,
+    "wave": 0, "wave_name": "TRI", "pitch_mod_sensitivity": 2
+  },
+  "additional": {
+    "present": true,
+    "key_mode_assign": "Polyphonic",
+    "unison_detune": 0,
+    "pitch_bend_range": 2, "pitch_bend_step": 0, "pitch_bend_mode": "Normal",
+    "portamento_mode": "Sus-Key/Retain-Follow", "portamento_time": 0, "portamento_step": 0,
+    "random_pitch": 2,
+    "mod_wheel": { "pitch": 31, "amp": 0, "eg_bias": 0 },
+    "breath_controller": { "pitch": 0, "amp": 0, "eg_bias": 0, "pitch_bias": 0 },
+    "aftertouch": { "pitch": 0, "amp": 0, "eg_bias": 63, "pitch_bias": 0 },
+    "foot_controller_1": { "pitch": 0, "amp": 0, "eg_bias": 0, "volume": 0 },
+    "foot_controller_2": { "pitch": 0, "amp": 0, "eg_bias": 0, "volume": 99 },
+    "midi_controller": { "pitch": 0, "amp": 0, "eg_bias": 0, "volume": 0 },
+    "fc1_as_cs1": false
+  }
+}
+```
+
+- `algorithm_carriers` / `algorithm_feedback_op`: which operators are wired to
+  the audio output and which one carries the feedback loop for this
+  `algorithm`, from `voice_params.DX7_ALGORITHMS` (see the caveat about this
+  table in Known Limitations).
+- `additional.present`: `true` for `"Gen 2 Extended"` patches (real `$06` data
+  was decoded); `false` for plain `"Voice"` patches — in that case every field
+  under `additional` holds the documented power-on default from spec §6, not
+  data actually stored in the voice. The frontend shows these visually muted.
+
+**Errors:**
+
+- `404` — no voice with this `id`.
+- `400` — `patch_type` is `"Performance"` (not a single voice; not applicable).
+- `409` — the source `.syx` file couldn't be re-read or no longer matches what
+  was scanned (moved/edited/deleted since the last scan) — re-scan its folder.
 
 ---
 
@@ -508,6 +653,10 @@ Plain ES2020 JavaScript. Key responsibilities:
 - **`renderDuplicateGroups(groups)`** — Builds group cards with radio buttons and per-group delete button
 - **`handleDeleteGroup(groupEl)`** — Confirms, POSTs `/api/delete-folder` for each unselected row, reloads
 - **`showToast()`** — Auto-dismissing notification (4 s)
+- **`showVoiceDetail(id)`** — Fetches `/api/voices/{id}/parameters`, hides the current tab, shows `#section-detail`, and calls `renderVoiceDetail()`; reverts to the previous tab and toasts on error
+- **`backFromDetail()`** — Returns from the Voice Parameters view to whichever tab (Explorer/Cleanup) was active before
+- **`renderVoiceDetail(data)`** — Builds the header (name, patch-type badge, algorithm mini-diagram, key-stat strip), the 6 operator tiles, LFO + Pitch EG cards, and the Key Mode/Pitch Bend/Controllers sections; the latter get a muted "DEFAULT VALUES" tag when `data.additional.present` is `false`
+- **`envSvg(rates, levels, opts)` / `waveSvg(shape, opts)`** — Draw the DX7 envelope contour / LFO waveform as an inline SVG markup string; ported from `design_handoff_voice_parameters/Voice Parameters Page.dc.html`'s reference logic (same geometry, no framework)
 
 **State variables:**
 
@@ -524,15 +673,21 @@ Plain ES2020 JavaScript. Key responsibilities:
 | `voicesAbortController` | `AbortController` used to cancel an in-flight `/api/voices` request when a newer one is triggered |
 | `statusInterval` | `setInterval` handle for the scan-status polling loop; cleared on completion or page unload |
 
-### `style.css`
+### `style.css` / `tokens.css`
 
-CSS custom properties design system with a dark, retro-synth theme:
+Dark, flat, token-driven design system — see [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md)
+for the full spec. `tokens.css` defines every `--ds-*` custom property (colors,
+type, spacing, radius, shadow) and must load before `style.css`. Highlights:
 
-- Color palette: teal (`hsl(172, 100%, 45%)`) + red accent on near-black (`hsl(225, 20%, 6%)`)
-- Glassmorphism cards with `backdrop-filter: blur(12px)`
-- Retro LCD panel: `Share Tech Mono` font + scanline overlay + glow text-shadow
-- Animated ambient orb backgrounds
-- Responsive layout (breakpoint at 768px)
+- One brand accent (`--ds-signal`, teal `#2fe3c2`); patch-type hues (Voice/
+  Performance/Gen 2) are for data badges only, never decoration
+- Two fonts only: Space Grotesk (UI/display) and JetBrains Mono (all data —
+  paths, positions, file names, counts, status)
+- **No** glow, glass (`backdrop-filter: blur()`), or animated background
+  elements — one subtle shadow (`--ds-shadow` / `--ds-shadow-lg`) is the only
+  elevation
+- Spacing on a 4px grid, radius from a fixed scale (6/10/14/999)
+- Responsive layout (breakpoints around 768–900px)
 
 ---
 
@@ -552,6 +707,22 @@ python test_parser.py
 | 2 | Raw 4096-byte headerless dump |
 | 3 | Concatenated 2-bank file (64 voices) |
 | 4 | Non-printable bytes are cleaned correctly |
+
+### Unit Tests — `test_voice_params.py`
+
+Tests `voice_params.py`'s decoders and the `parser.py` raw-block extraction path.
+
+```powershell
+python test_voice_params.py
+```
+
+| Test | Description |
+|------|--------------|
+| `test_decode_core_voice` | Decodes a synthetic 128-byte core voice against the spec's own worked example (algorithm, feedback, transpose, LFO) and asserts every OP1 bitfield, including the OP6→OP1 storage-order reversal |
+| `test_decode_additional_voice_present` | Decodes a synthetic 35-byte AMEM record (key mode, pitch bend range, controller bias fields) |
+| `test_decode_additional_voice_defaults` | Confirms `decode_additional_voice(None)` returns the documented power-on defaults with `present: False` |
+| `test_build_voice_parameters` | Confirms core + additional combine correctly, with and without an additional block |
+| `test_extract_voice_blocks_matches_parse_syx_file` | Confirms `extract_voice_blocks()` and `parse_syx_file()` return identical name/position/patch_type ordering for the same file — this is what lets a DB row's rank map onto the right voice (see `database.get_voice_occurrence_index`) |
 
 ### Integration Test — `verify_scanner.py`
 
@@ -578,6 +749,18 @@ Expected output: 96 voices across 3 banks at varying directory depths.
 - **Folder deletion is irreversible** — the Cleanup tab uses `shutil.rmtree`, which permanently removes the entire directory and all its contents. There is no recycle bin or undo.
 - Duplicate folder detection is based solely on **data in the current database**. If files have been added, moved, or deleted on disk since the last scan, re-scan before running Cleanup to get accurate results.
 - **AMEM has no patch names** — The AMEM format carries no name data. When a VMEM bank is bundled in the same file (the common DX7S/DX7II case), names are taken from the paired VMEM slots after merging. If an AMEM bank arrives without a paired VMEM, synthetic names `Ext Voice 01`–`Ext Voice 32` are kept.
+- **`DX7_ALGORITHMS` (in `voice_params.py`) needs verification** — the carrier/
+  modulator/feedback-operator table used to color the Voice Parameters page's
+  operator tiles is reconstructed from general DX7 reference knowledge, not
+  from the sysex byte spec (which never stores per-algorithm routing). Only
+  algorithm 2 has been cross-checked against a real worked example; spot-check
+  the remaining 31 entries against the official Yamaha DX7 algorithm chart
+  before relying on it beyond this page's decorative coloring.
+- **Voice Parameters requires the source file to still match the last scan** —
+  the detail endpoint re-reads the `.syx` file rather than storing raw bytes
+  in the database (see Voice Parameters Flow above). If a file was moved,
+  edited, or deleted since scanning, opening its details returns a `409` and
+  a "re-scan this folder" toast instead of stale or incorrect data.
 
 ---
 

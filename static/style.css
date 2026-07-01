@@ -649,6 +649,10 @@ body {
     text-align: center;
 }
 
+.col-actions .btn-reveal + .btn-reveal {
+    margin-left: 6px;
+}
+
 /* File-count badges */
 .file-count-badge {
     display: inline-flex;
@@ -847,6 +851,13 @@ body {
 }
 
 .modal-reveal-btn {
+    flex-shrink: 0;
+}
+
+.modal-file-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     flex-shrink: 0;
 }
 
@@ -1775,4 +1786,464 @@ a:focus-visible,
 [role="tab"]:focus-visible {
     outline: 2px solid var(--ds-signal);
     outline-offset: 2px;
+}
+
+/* ============================================================================
+   VOICE PARAMETERS DETAIL VIEW
+   See DESIGN_SYSTEM.md "Voice Parameters Page" for the component spec this
+   implements (source design: design_handoff_voice_parameters/Voice Parameters
+   Page.dc.html).
+   ============================================================================ */
+
+.voice-detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-4);
+}
+
+.detail-back-btn {
+    align-self: flex-start;
+    width: auto;
+    gap: var(--ds-2);
+    padding: var(--ds-2) var(--ds-4);
+}
+
+.vd-card {
+    background: var(--ds-bg);
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-r-panel);
+    box-shadow: var(--ds-shadow-lg);
+    overflow: hidden;
+}
+
+/* --- Header band --- */
+.vd-header {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-5);
+    flex-wrap: wrap;
+    padding: var(--ds-5) var(--ds-6);
+    background: var(--ds-surface);
+    border-bottom: 1px solid var(--ds-border);
+}
+
+.vd-header-left {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.vd-brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--ds-r-ctrl);
+    background: var(--ds-signal);
+    color: var(--ds-signal-ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ds-font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.vd-name-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-2);
+}
+
+.vd-name {
+    font-family: var(--ds-font-ui);
+    font-size: var(--ds-fs-title);
+    font-weight: var(--ds-fw-title);
+    letter-spacing: -0.01em;
+    color: var(--ds-text);
+    margin: 0;
+}
+
+.vd-meta {
+    font-family: var(--ds-font-mono);
+    font-size: var(--ds-fs-micro);
+    letter-spacing: 0.04em;
+    color: var(--ds-text-4);
+    margin-top: 4px;
+}
+
+.vd-alg-diagram {
+    position: relative;
+    width: 80px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.vd-alg-node {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ds-font-mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    background: var(--ds-elevated);
+    border: 1px solid var(--ds-border-2);
+    color: var(--ds-text-3);
+}
+
+.vd-alg-node-carrier {
+    background: var(--ds-signal-fill);
+    border-color: var(--ds-signal);
+    color: var(--ds-signal);
+}
+
+.vd-key-stats {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: auto;
+    border-left: 1px solid var(--ds-border);
+}
+
+.vd-stat {
+    padding: var(--ds-1) var(--ds-4);
+    border-right: 1px solid var(--ds-border);
+}
+
+.vd-stat-label {
+    font-family: var(--ds-font-mono);
+    font-size: 9px;
+    color: var(--ds-text-4);
+    letter-spacing: 0.1em;
+    margin-bottom: 3px;
+}
+
+.vd-stat-value {
+    font-family: var(--ds-font-mono);
+    font-size: var(--ds-fs-sm);
+    color: var(--ds-text-2);
+    font-weight: 600;
+}
+
+/* --- Sections --- */
+.vd-section {
+    padding: 0 var(--ds-6);
+    margin-bottom: var(--ds-6);
+}
+
+.vd-section:first-of-type {
+    padding-top: var(--ds-5);
+}
+
+.vd-section-last {
+    margin-bottom: 0;
+    padding-bottom: var(--ds-6);
+}
+
+.vd-section-heading {
+    display: flex;
+    align-items: baseline;
+    gap: var(--ds-3);
+    margin-bottom: var(--ds-4);
+}
+
+.vd-section-heading h2 {
+    font-family: var(--ds-font-ui);
+    font-size: var(--ds-fs-h3);
+    font-weight: 600;
+    color: var(--ds-text);
+    margin: 0;
+}
+
+.vd-section-index {
+    font-family: var(--ds-font-mono);
+    font-size: var(--ds-fs-cap);
+    color: var(--ds-signal);
+    letter-spacing: 0.1em;
+}
+
+/* Shown next to a section title when its values are power-on defaults rather
+   than data actually stored in the voice (plain "Voice" patches have no $06
+   block — see voice_params.decode_additional_voice). */
+.vd-defaults-tag {
+    margin-left: auto;
+    font-family: var(--ds-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ds-text-4);
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-r-ctrl);
+    padding: 2px 8px;
+}
+
+/* Mutes the value column so defaulted sections read as placeholder data at a
+   glance, without hiding them (labels/icons/titles stay full-strength). */
+.vd-defaulted .vd-kv-grid > div span:last-child,
+.vd-defaulted .vd-kv-stack > div span:last-child,
+.vd-defaulted .vd-controller-table td:not(.vd-ct-src) {
+    color: var(--ds-text-4);
+    font-style: italic;
+    opacity: 0.75;
+}
+
+/* --- Operator tiles (Section 01) --- */
+.op-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--ds-4);
+}
+
+.op-tile {
+    background: var(--ds-surface);
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-r-card);
+    padding: var(--ds-4) 18px;
+}
+
+.op-tile-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--ds-3);
+}
+
+.op-tile-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--ds-font-ui);
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ds-text);
+}
+
+.op-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ds-text-4);
+    flex-shrink: 0;
+}
+
+.op-dot-carrier {
+    background: var(--ds-signal);
+}
+
+.vd-fb-icon {
+    font-size: 9px;
+    color: var(--ds-signal);
+}
+
+.op-role-tag {
+    font-family: var(--ds-font-mono);
+    font-size: 9px;
+    color: var(--ds-text-4);
+    letter-spacing: 0.08em;
+}
+
+.op-eg-panel, .vd-inset-panel {
+    background: var(--ds-sunken);
+    border: 1px solid var(--ds-border);
+    border-radius: 8px;
+    padding: 6px 8px 2px;
+    margin-bottom: var(--ds-3);
+}
+
+.op-meter {
+    margin-bottom: var(--ds-3);
+}
+
+.op-meter-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--ds-font-mono);
+    font-size: 9.5px;
+    color: var(--ds-text-4);
+    letter-spacing: 0.06em;
+    margin-bottom: 5px;
+}
+
+.op-meter-row span:last-child {
+    color: var(--ds-text-2);
+}
+
+.op-meter-track {
+    height: 7px;
+    background: var(--ds-sunken);
+    border: 1px solid var(--ds-border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.op-meter-fill {
+    height: 100%;
+    background: var(--ds-signal);
+}
+
+.op-eg-numbers {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px var(--ds-3);
+    font-family: var(--ds-font-mono);
+    font-size: 11px;
+}
+
+.op-eg-label {
+    color: var(--ds-text-4);
+}
+
+.op-eg-value {
+    color: var(--ds-text-2);
+    text-align: right;
+}
+
+.op-summary {
+    border-top: 1px solid var(--ds-border);
+    margin-top: var(--ds-3);
+    padding-top: 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: var(--ds-font-mono);
+    font-size: 10.5px;
+    color: var(--ds-text-3);
+}
+
+/* --- Modulation (Section 02) --- */
+.vd-mod-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: var(--ds-4);
+}
+
+.vd-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ds-4);
+}
+
+.vd-card-inner {
+    background: var(--ds-surface);
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-r-card);
+    padding: var(--ds-5);
+}
+
+.vd-card-title {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-2);
+    margin-bottom: var(--ds-4);
+    font-family: var(--ds-font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ds-text);
+}
+
+.vd-card-tag {
+    margin-left: auto;
+    font-family: var(--ds-font-mono);
+    font-size: 10.5px;
+    color: var(--ds-text-4);
+}
+
+.vd-lfo-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ds-3);
+}
+
+.vd-kv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ds-2) var(--ds-5);
+}
+
+.vd-kv-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-2);
+}
+
+.vd-kv-grid > div, .vd-kv-stack > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-3);
+    font-size: var(--ds-fs-sm);
+    color: var(--ds-text-3);
+}
+
+.vd-kv-grid > div span:last-child, .vd-kv-stack > div span:last-child {
+    font-family: var(--ds-font-mono);
+    font-size: var(--ds-fs-sm);
+    color: var(--ds-text-2);
+    font-weight: 500;
+}
+
+.vd-stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-2) var(--ds-5);
+    font-family: var(--ds-font-mono);
+    font-size: 11.5px;
+    color: var(--ds-text-4);
+}
+
+.vd-stat-row strong {
+    color: var(--ds-text-2);
+    font-weight: 500;
+}
+
+/* --- Controllers (Section 04) --- */
+.vd-controller-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.vd-controller-table th {
+    text-align: right;
+    font-family: var(--ds-font-mono);
+    font-size: 10px;
+    color: var(--ds-text-4);
+    letter-spacing: 0.06em;
+    padding: 5px 6px;
+}
+
+.vd-controller-table td {
+    text-align: right;
+    font-family: var(--ds-font-mono);
+    font-size: var(--ds-fs-sm);
+    color: var(--ds-text-3);
+    padding: 7px 6px;
+}
+
+.vd-controller-table tr {
+    border-top: 1px solid var(--ds-border);
+}
+
+.vd-ct-src {
+    text-align: left;
+    color: var(--ds-text-2);
+    font-weight: 600;
+}
+
+.vd-footnote {
+    margin-top: var(--ds-3);
+    font-family: var(--ds-font-mono);
+    font-size: 11px;
+    color: var(--ds-text-4);
+}
+
+@media (max-width: 900px) {
+    .op-grid { grid-template-columns: repeat(2, 1fr); }
+    .vd-mod-grid, .vd-two-col { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+    .op-grid { grid-template-columns: 1fr; }
+    .vd-key-stats { border-left: none; margin-left: 0; }
 }

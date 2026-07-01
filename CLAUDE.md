@@ -5,10 +5,12 @@ consistent with the established design system. Read it before any UI change.
 
 ## Design system — non-negotiable
 
-The visual system is defined in **`design_handoff_dx7_redesign/DESIGN_SYSTEM.md`**
-and implemented as tokens in **`design_handoff_dx7_redesign/tokens.css`**.
-A rendered reference of every component and the redesigned browse screen lives in
-**`DX7 Browser — Design Review.dc.html`** (open in a browser).
+The visual system is defined in **`DESIGN_SYSTEM.md`** (repo root) and
+implemented as tokens in **`static/tokens.css`**. Design handoff folders named
+`design_handoff_*/` (e.g. `design_handoff_voice_parameters/`) contain
+per-feature mockups and specs used to build a specific page — they are
+reference material for that feature's build, not the live source of truth;
+once a feature ships, `DESIGN_SYSTEM.md` and `static/tokens.css` are.
 
 **Rules:**
 1. **Use tokens, never raw values.** Every color, font, space, radius and shadow
@@ -38,18 +40,49 @@ A rendered reference of every component and the redesigned browse screen lives i
   session stays consistent.
 
 ## Architecture (don't break)
-- Backend: FastAPI (`app.py`), SQLite (`database.py`), SysEx parser (`parser.py`).
-- Frontend: vanilla ES2020 (`static/app.js`), no framework, no build step.
+- Backend: FastAPI (`app.py`), SQLite (`database.py`).
+- SysEx byte access is split into two reusable layers — keep it that way for
+  future features (export, editing, comparison, etc.):
+  - `parser.py` — finds voices/performances inside a `.syx` file. Its public
+    `parse_syx_file(path)` returns name/position/patch_type only (unchanged
+    contract, used by the scan flow); `extract_voice_blocks(path)` returns the
+    same list in the same order but also keeps the raw 128-byte VMEM /
+    35-byte AMEM byte blocks for full decoding. Both are built from one shared
+    internal scan (`_scan_all_patches`) — don't reimplement the F0/43 message
+    scanning loop a third time; add to that shared function instead.
+  - `voice_params.py` — pure byte-to-parameters decoders (`decode_core_voice`,
+    `decode_additional_voice`, `build_voice_parameters`, `DX7_ALGORITHMS`). No
+    file I/O; takes raw bytes from `parser.py`, returns structured dicts. This
+    is the module any new voice-data feature should build on.
+- Frontend: vanilla ES2020 (`static/app.js`), no framework, no build step. The
+  Voice Parameters page is an in-page view (`#section-detail`, toggled like
+  the Explorer/Cleanup tabs) rather than a separate route — follow that
+  pattern for any future full-page drill-down rather than adding a router.
 - All search/filter is **server-side**, capped at `RESULT_LIMIT = 200`. The
   frontend never loads the full dataset. Keep it that way for performance.
 - Patch types: `"Voice"`, `"Performance"`, `"Gen 2 Extended"` — map each to its
-  token set and FontAwesome icon (see design system §2).
+  token set and FontAwesome icon (see design system §2). `"Performance"` isn't
+  a single voice (it's a combination of up to 4 voice slots) — don't add
+  per-voice-parameter features to it without a product decision first.
 
 ## Migration status / next steps
-The redesign is rolled out in this order (see DESIGN_SYSTEM.md §6):
-1. **P0** — add `tokens.css`, swap fonts, delete glow/glass/orb rules. *(do first)*
-2. **P1** — rebuild the Patch Explorer (command bar, pills, tree, results table).
-3. **P2** — Cleanup tab, duplicate-files modal, toasts, empty states.
-4. **A11y pass** — focus rings, keyboard nav, contrast audit.
+The dark, token-driven redesign (DESIGN_SYSTEM.md §1–6: tokens, Patch Explorer,
+Cleanup tab, duplicate-files modal, toasts, empty states) has **shipped** —
+`tokens.css` already loads in `static/index.html` and `style.css` already
+consumes `--ds-*` tokens throughout. Don't restart that rollout; just keep new
+work on tokens per the rules above.
 
-Implement top-down; each step ships independently and the app keeps working.
+The **Voice Parameters page** (DESIGN_SYSTEM.md §7) has also shipped: a
+per-voice "View Details" button opens a full-page breakdown of every operator,
+envelope, LFO, and (Gen 2 Extended only) key mode/pitch bend/controller
+setting. See `voice_params.py` and the "Voice Parameters Flow" section of
+`README.md` for how it's wired end to end.
+
+Open follow-ups, not yet done:
+- **A11y pass** — focus rings, keyboard nav, contrast audit across the whole app.
+- **`DX7_ALGORITHMS` verification** — the carrier/modulator/feedback-operator
+  table in `voice_params.py` is reconstructed from general DX7 knowledge, not
+  the sysex byte spec (which never stores per-algorithm routing). Only
+  algorithm 2 is cross-checked; spot-check the rest against the official
+  Yamaha algorithm chart before trusting it beyond the Voice Parameters page's
+  decorative operator coloring.
