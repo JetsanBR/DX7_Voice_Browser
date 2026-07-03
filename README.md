@@ -100,6 +100,7 @@ DX7_Voice_Browser/
 │
 ├── DESIGN_SYSTEM.md      # Authoritative design system spec
 ├── CLAUDE.md             # Agent guardrails / architecture guide
+├── start.ps1             # Activates venv and launches uvicorn
 │
 └── voices.db            # SQLite database (auto-created on first run)
 ```
@@ -130,6 +131,13 @@ pip install fastapi uvicorn
 
 ```powershell
 uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+Or, from the repo root, run [`start.ps1`](start.ps1) — it activates `venv` and
+runs the same command:
+
+```powershell
+.\start.ps1
 ```
 
 Then open your browser to: **<http://127.0.0.1:8000>**
