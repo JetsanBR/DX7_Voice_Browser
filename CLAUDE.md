@@ -39,6 +39,37 @@ once a feature ships, `DESIGN_SYSTEM.md` and `static/tokens.css` are.
 - If it's genuinely new, document it in `DESIGN_SYSTEM.md` §5 so the next
   session stays consistent.
 
+## Packaging (don't break)
+
+The app ships to end users as a single portable Windows `.exe`
+(`pyinstaller dx7_voice_browser.spec` → `dist\DX7VoiceBrowser.exe`, ~19 MB), which
+opens a native pywebview window. There are now **two entry points over the same
+code** — `main.py` (desktop) and `app:app` (dev, via `start.ps1`). Change one and
+check the other still works.
+
+Four invariants that a frozen build breaks the moment you violate them:
+
+1. **Never use a relative path for a resource or the database.** Go through
+   `paths.py`: `resource_path("static")` for bundled read-only assets,
+   `user_data_dir()` / `db_path()` for anything writable. Under a onefile build
+   the CWD is wherever the user double-clicked, and bundled assets live in an
+   ephemeral `%TEMP%\_MEIxxxxxx` directory that is deleted on exit — so an
+   absolute path into it must never be written to the database.
+2. **No CDN links in `static/index.html`.** Fonts and Font Awesome are vendored
+   in `static/vendor/` so the packaged app works offline; a CDN `<link>` renders
+   as blank icons for anyone offline. Keep `fontawesome/css/` and
+   `fontawesome/webfonts/` as siblings (the CSS uses `url(../webfonts/…)`), and
+   don't strip the attribution comment from `all.min.css`. Regenerate with
+   `tools/fetch_vendor.ps1`. Font Awesome **Free** only — `fa-radar` and
+   `fa-square-wave` are Pro and silently render as nothing.
+3. **Assume no stdout.** A `--windowed` build has `sys.stdout`/`stderr` set to
+   `None`. Log via the `logging` module (it goes to a file), never `print()`, and
+   pass explicit `DEVNULL` handles to every `subprocess` call.
+4. **Scanning is destructive** — `run_background_scan()` calls
+   `database.clear_db()` first. Anything that triggers a scan automatically (the
+   first-run demo seeding does) must first confirm the database is empty, or it
+   will silently destroy a user's index.
+
 ## Architecture (don't break)
 - Backend: FastAPI (`app.py`), SQLite (`database.py`).
 - SysEx byte access is split into two reusable layers — keep it that way for
@@ -78,7 +109,24 @@ envelope, LFO, and (Gen 2 Extended only) key mode/pitch bend/controller
 setting. See `voice_params.py` and the "Voice Parameters Flow" section of
 `README.md` for how it's wired end to end.
 
+**Desktop packaging** has shipped too — see the Packaging section above.
+`main.py` + `dx7_voice_browser.spec` produce the portable `.exe`; fonts and icons
+are vendored in `static/vendor/`; all paths route through `paths.py`.
+
 Open follow-ups, not yet done:
+- **Code signing** — the `.exe` is unsigned, so SmartScreen shows "Windows
+  protected your PC" on first run and users must click *More info → Run anyway*.
+  Only an Authenticode certificate removes that (an EV cert bypasses SmartScreen
+  immediately; an OV cert still has to accumulate reputation).
+- **Onefile cold start** — the bundle re-extracts ~19 MB to `%TEMP%` on every
+  launch (~1.7 s here, slower on a cold disk or with aggressive AV) with no
+  feedback. If that gets worse on real users' machines, switching the spec to
+  onedir-in-a-zip makes launch instant and trips AV heuristics less; it's a
+  one-flag change but gives up the single-file property.
+- **Deleting to the Recycle Bin** — the Cleanup tab still uses `shutil.rmtree`,
+  which is permanent. That was an acceptable risk for a developer-run script; it
+  is a sharper edge now that non-technical users get the app. `send2trash` would
+  make it recoverable.
 - **A11y pass** — focus rings, keyboard nav, contrast audit across the whole app.
 - **`DX7_ALGORITHMS` verification** — the carrier/modulator/feedback-operator
   table in `voice_params.py` is reconstructed from general DX7 knowledge, not

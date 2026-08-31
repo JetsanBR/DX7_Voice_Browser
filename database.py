@@ -5,7 +5,12 @@ import json
 import shutil
 from contextlib import closing
 
-DB_FILE = "voices.db"
+import paths
+
+# Absolute path, so the database is found no matter what the working directory
+# is. _connect() reads this as a module global at call time and every query
+# function goes through _connect(), so this one assignment reroutes them all.
+DB_FILE = str(paths.db_path())
 RESULT_LIMIT = 200
 
 
@@ -50,6 +55,13 @@ def clear_db():
     with closing(_connect()) as conn:
         conn.execute("DELETE FROM voices")
         conn.commit()
+
+
+def count_voices():
+    """Total number of indexed patches. Used to tell a first run apart from an
+    existing install, since scanning is destructive (it calls clear_db first)."""
+    with closing(_connect()) as conn:
+        return conn.execute("SELECT COUNT(*) FROM voices").fetchone()[0]
 
 
 def insert_voices(voices):

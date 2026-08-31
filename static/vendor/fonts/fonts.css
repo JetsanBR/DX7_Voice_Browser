@@ -1,0 +1,79 @@
+/* Local @font-face declarations for the two project fonts.
+ *
+ * These replace the Google Fonts CDN <link> so the packaged desktop app
+ * renders correctly with no network connection. Relative url()s resolve
+ * against this file's own location, so the flat directory layout works.
+ *
+ * Regenerate the woff2 files with tools/fetch_vendor.ps1.
+ *
+ * Space Grotesk (c) Florian Karsten. SIL Open Font License 1.1.
+ *   Full text: OFL-SpaceGrotesk.txt
+ * JetBrains Mono (c) JetBrains s.r.o. SIL Open Font License 1.1.
+ *   Full text: OFL-JetBrainsMono.txt
+ */
+
+/* --- Space Grotesk: UI / display --- */
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('space-grotesk-latin-400.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('space-grotesk-latin-500.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('space-grotesk-latin-600.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('space-grotesk-latin-700.woff2') format('woff2');
+}
+
+/* --- JetBrains Mono: all data (paths, positions, file names, counts) --- */
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('jetbrains-mono-latin-400.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('jetbrains-mono-latin-500.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('jetbrains-mono-latin-600.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('jetbrains-mono-latin-700.woff2') format('woff2');
+}

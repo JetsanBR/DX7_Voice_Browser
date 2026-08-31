@@ -1,8 +1,15 @@
 # Database (auto-generated on first run, should not be committed)
 voices.db
 
-# Python virtual environment
+# Python virtual environments
 venv/
+.buildvenv/
+
+# PyInstaller build output (dx7_voice_browser.spec IS tracked)
+build/
+build-console/
+dist/
+dist-console/
 
 # Python cache
 __pycache__/

@@ -1,0 +1,17 @@
+# Build/packaging dependencies. Runtime deps plus PyInstaller.
+#
+# Full build environment setup:
+#     py -3.14 -m venv .buildvenv
+#     .\.buildvenv\Scripts\Activate.ps1
+#     pip install --only-binary=pythonnet,cffi -r requirements-dev.txt
+#     python -c "import clr, webview; print('backend OK')"
+
+-r requirements.txt
+
+pyinstaller==6.22.2
+pyinstaller-hooks-contrib==2026.7
+altgraph==0.17.5
+pefile==2024.8.26
+pywin32-ctypes==0.2.3
+setuptools==84.0.0
+packaging==26.3

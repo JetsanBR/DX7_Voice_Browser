@@ -5,15 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yamaha DX7 Voice Browser</title>
-    <!-- Google Fonts: Space Grotesk (UI/display) + JetBrains Mono (data) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <!-- Fonts and icons are vendored locally so the packaged desktop app works
+         offline. See static/vendor/README.md. Space Grotesk = UI/display,
+         JetBrains Mono = all data. -->
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <!-- tokens.css must load before style.css (DESIGN_SYSTEM.md) -->
     <link rel="stylesheet" href="tokens.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -37,7 +36,7 @@
                     <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
                 </button>
                 <button id="scan-btn" class="btn btn-primary">
-                    <span id="scan-btn-text"><i class="fa-solid fa-radar" aria-hidden="true"></i> SCAN</span>
+                    <span id="scan-btn-text"><i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> SCAN</span>
                     <span id="scan-spinner" class="spinner hidden"></span>
                 </button>
             </div>

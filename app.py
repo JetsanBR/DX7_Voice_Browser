@@ -1,7 +1,9 @@
+import logging
 import os
+import shutil
 import subprocess
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, BackgroundTasks, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -9,18 +11,17 @@ from typing import Optional
 
 import database
 import parser
+import paths
 import voice_params
 
-app = FastAPI(title="Yamaha DX7 Voice Browser")
+log = logging.getLogger("dx7.app")
 
-# Enable CORS for development flexibility
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
-    allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
-)
+# No CORS middleware: the SPA is served from this same origin and every fetch()
+# in static/app.js uses a root-relative /api/... path, so it is never exercised.
+# It also can't be configured correctly now that the desktop launcher binds an
+# ephemeral port. If it is ever needed again, use
+# allow_origin_regex=r"^http://(127\.0\.0\.1|localhost)(:\d+)?$" -- never a
+# hardcoded list of origins.
 
 # Global scan state
 scan_state = {
@@ -32,10 +33,60 @@ scan_state = {
     "error": None
 }
 
-# Ensure database is initialized on startup
-@app.on_event("startup")
-def startup_event():
+# Marker file recording that the bundled demo patches have been installed once.
+# Deliberately a file rather than an "is the voices table empty?" check, so that
+# using Clear Database does not silently resurrect the demo data.
+DEMO_SENTINEL = "demo_seeded.marker"
+
+
+def _seed_demo_data():
+    """First run only: install the bundled sample patches and index them.
+
+    The patches are copied out of the resource dir before being scanned. Under
+    a onefile build the resource dir is an ephemeral %TEMP%\\_MEIxxxxxx path
+    that is deleted on exit, so scanning them in place would write absolute
+    paths into the database that are dead on the next launch -- breaking both
+    Reveal in Explorer and the Voice Parameters page.
+
+    Never fatal: the app is fully usable without demo data.
+    """
+    marker = paths.user_data_dir() / DEMO_SENTINEL
+    if marker.exists():
+        return
+
+    try:
+        # run_background_scan() calls database.clear_db() before indexing, so
+        # seeding a database that already holds voices would destroy the user's
+        # index. That happens on the upgrade path: an existing install has a
+        # populated database but no sentinel yet. Claim the sentinel and leave
+        # their data alone.
+        if database.count_voices() > 0:
+            marker.write_text("1", encoding="utf-8")
+            log.info("Existing voice index found; skipping demo data seeding.")
+            return
+
+        src = paths.resource_path("sample_patches")
+        if src.is_dir():
+            dst = paths.demo_patches_dir()
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+            # 3 files / ~24 KB, so this runs in well under 50 ms. Lifespan is
+            # awaited before the server accepts connections, so the very first
+            # request already sees a populated database -- no loading flicker.
+            run_background_scan(str(dst))
+        marker.write_text("1", encoding="utf-8")
+    except Exception:
+        log.exception("Demo data seeding failed; continuing without it.")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     database.init_db()
+    _seed_demo_data()
+    yield
+
+
+app = FastAPI(title="Yamaha DX7 Voice Browser", lifespan=lifespan)
+
 
 class ScanRequest(BaseModel):
     directory: str
@@ -134,7 +185,39 @@ def get_scan_status():
 
 @app.get("/api/browse-folder")
 def browse_folder():
-    """Opens a native OS folder picker dialog and returns the selected path."""
+    """Opens a native OS folder picker dialog and returns the selected path.
+
+    Two backends. In the packaged desktop app the dialog goes through pywebview,
+    which marshals it onto the WinForms GUI thread and blocks the caller -- safe
+    to call from Starlette's threadpool, and the dialog is properly parented to
+    the app window. tkinter remains the fallback for the bare `uvicorn app:app`
+    dev flow, where no window exists; it is excluded from the frozen build.
+
+    Returns {"path": <str|None>} either way -- None means the user cancelled.
+    """
+    try:
+        import webview
+    except ImportError:
+        webview = None
+
+    if webview is not None and getattr(webview, "windows", None):
+        try:
+            # FileDialog.FOLDER in pywebview 6.x; FOLDER_DIALOG is the
+            # deprecated alias kept for older versions.
+            folder_type = getattr(
+                getattr(webview, "FileDialog", None), "FOLDER", None
+            )
+            if folder_type is None:
+                folder_type = webview.FOLDER_DIALOG
+            result = webview.windows[0].create_file_dialog(folder_type)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Could not open folder dialog: {e}")
+        if not result:
+            return {"path": None}
+        # Returns a sequence of paths; older versions returned a bare string.
+        return {"path": result if isinstance(result, str) else result[0]}
+
+    # --- dev fallback: no pywebview window, use tkinter ---
     try:
         import tkinter as tk
         from tkinter import filedialog
@@ -146,6 +229,17 @@ def browse_folder():
         return {"path": folder or None}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not open folder dialog: {e}")
+
+
+@app.get("/api/app-info")
+def app_info():
+    """Where the app keeps its files. Used by the front-end to prefill the scan
+    field with the bundled demo patches on first run."""
+    return {
+        "demo_path": str(paths.demo_patches_dir()),
+        "data_dir": str(paths.user_data_dir()),
+        "frozen": paths.is_frozen(),
+    }
 
 @app.get("/api/folders")
 def get_folders():
@@ -276,14 +370,33 @@ def reveal_in_explorer(request: RevealRequest):
         raise HTTPException(status_code=404, detail="File not found.")
     
     try:
-        # On Windows, using explorer /select, <path> opens explorer and highlights the file
-        subprocess.run(['explorer', '/select,', os.path.normpath(file_path)])
+        # On Windows, using explorer /select, <path> opens explorer and highlights the file.
+        #
+        # The DEVNULL handles are required under a --windowed PyInstaller build:
+        # there sys.stdin/stdout/stderr are None and the underlying OS handles
+        # are invalid, so the default "inherit the parent's handles" behaviour
+        # can raise OSError: [WinError 6] The handle is invalid.
+        # check=False because explorer.exe returns exit code 1 even on success.
+        subprocess.run(
+            ['explorer', '/select,', os.path.normpath(file_path)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000),
+            check=False,
+        )
         return {"message": "Folder opened successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to open explorer: {e}")
 
 # Mount static files to serve the front-end SPA
 # Note: Place this after the API routes so it doesn't shadow them
-os.makedirs("static", exist_ok=True)
+_static_dir = paths.resource_path("static")
+if not _static_dir.is_dir():
+    # Fail loudly. This used to be os.makedirs("static", exist_ok=True), which
+    # created an empty directory relative to the working directory and then
+    # served 404s for the whole SPA -- and under a frozen build would have
+    # littered a stray static\ folder wherever the user double-clicked.
+    raise RuntimeError(f"Bundled static assets are missing: {_static_dir}")
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="static")

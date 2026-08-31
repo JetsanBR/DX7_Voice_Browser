@@ -99,7 +99,24 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFolders();
     checkScanStatusOnLoad();
     setupEventListeners();
+    prefillDemoPath();
 });
+
+// Prefill the scan field with the bundled demo patches, so a first-run user can
+// see where the sample patches came from and re-scan them. Never overwrites a
+// path the user has already typed.
+async function prefillDemoPath() {
+    try {
+        const res = await fetch('/api/app-info');
+        if (!res.ok) return;
+        const info = await res.json();
+        if (!dirInput.value && info.demo_path) {
+            dirInput.value = info.demo_path;
+        }
+    } catch (e) {
+        /* non-fatal: the field just stays empty */
+    }
+}
 
 // Event Listeners Setup
 function setupEventListeners() {
@@ -1176,7 +1193,7 @@ function renderDetailModulation(data) {
         <div class="vd-section-heading"><span class="vd-section-index">02</span><h2>Modulation</h2></div>
         <div class="vd-mod-grid">
             <div class="vd-card-inner">
-                <div class="vd-card-title"><i class="fa-solid fa-square-wave" style="color:var(--ds-signal);"></i> LFO <span class="vd-card-tag">${escapeHtml(lfo.wave_name)}</span></div>
+                <div class="vd-card-title"><i class="fa-solid fa-wave-square" style="color:var(--ds-signal);"></i> LFO <span class="vd-card-tag">${escapeHtml(lfo.wave_name)}</span></div>
                 <div class="vd-inset-panel vd-lfo-panel">${lfoWave}</div>
                 <div class="vd-kv-grid">
                     <div><span>Wave</span><span>${escapeHtml(lfo.wave_name)}</span></div>
