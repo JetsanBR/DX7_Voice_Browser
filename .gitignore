@@ -15,3 +15,13 @@ dist-console/
 __pycache__/
 *.pyc
 *.pyo
+
+# Test artifacts (fixtures now go to the temp dir, but a hard crash mid-run
+# or an older checkout can still leave these behind)
+test_scan_root/
+test_bank_*.syx
+test_extract_blocks.syx
+.pytest_cache/
+
+# Other common virtualenv names
+.venv/

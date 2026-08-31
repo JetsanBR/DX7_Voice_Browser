@@ -41,6 +41,21 @@
   --ds-perf-fill-strong: rgba(181,140,255,0.14); /* pitch-EG graph fill area (reuses the perf/violet hue) */
   --ds-gen2:        #f5b860;   --ds-gen2-fill:  rgba(245,184,96,0.12);  --ds-gen2-line:  rgba(245,184,96,0.30);
 
+  /* ---- SURFACE / ACCENT DERIVATIVES ------------------------------------
+     Added when style.css was swept for raw literals. Values are the ones that
+     were already hardcoded, so appearance is unchanged -- they just have names
+     now. Anything new should reuse these rather than reintroducing a literal. */
+  --ds-signal-hover:      #46e8cd;                  /* primary button, hover */
+  --ds-signal-wash:       rgba(47,227,194,0.04);    /* faintest teal tint */
+  --ds-signal-fill-soft:  rgba(47,227,194,0.07);    /* row/tab hover tint */
+  --ds-border-subtle:     #15191d;                  /* table row hairline */
+  --ds-hairline:          rgba(255,255,255,0.03);   /* thead/zebra lift */
+  --ds-hairline-soft:     rgba(255,255,255,0.015);
+  --ds-hairline-strong:   rgba(255,255,255,0.05);
+  --ds-scrim:             hsla(225,20%,4%,0.80);    /* translucent sunken panel */
+  --ds-scrim-soft:        hsla(225,20%,4%,0.50);
+  --ds-backdrop:          rgba(0,0,0,0.70);         /* modal backdrop */
+
   /* ---- STATUS ----------------------------------------------------------- */
   --ds-success:     #4fe09a;
   --ds-warning:     #f5b860;
@@ -58,7 +73,11 @@
   --ds-fs-ui:      14px;  --ds-fw-ui:      500;
   --ds-fs-sm:      13px;
   --ds-fs-cap:     12px;  /* mono captions, labels       */
-  --ds-fs-micro:   11px;  /* table header eyebrows ONLY  */
+  --ds-fs-micro:   11px;
+  /* Icon glyph sizes. Decorative FontAwesome marks, not body text, so
+     they sit outside the text scale rather than violating its floor. */
+  --ds-fs-icon:    20px;   /* section + toast icons */
+  --ds-fs-icon-xl: 48px;   /* empty-state icon */  /* table header eyebrows ONLY  */
   /* never go below 11px */
 
   /* ---- SPACING (4px grid) ---------------------------------------------- */

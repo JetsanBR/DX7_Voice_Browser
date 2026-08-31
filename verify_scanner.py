@@ -78,22 +78,26 @@ def test_recursive_scanning():
     level3 = os.path.join(level1, "level2", "level3")
     empty_dir = os.path.join(test_root, "empty_dir")
 
-    os.makedirs(level3, exist_ok=True)
-    os.makedirs(empty_dir, exist_ok=True)
-
     file_a = os.path.join(test_root, "bankA.syx")
     file_b = os.path.join(level1, "bankB.SYX")  # test case-insensitive extension
     file_c = os.path.join(level3, "bankC.syx")
     file_txt = os.path.join(test_root, "ignore_me.txt")  # should be ignored
 
-    generate_mock_sysex_file(file_a, "BankA")
-    generate_mock_sysex_file(file_b, "BankB")
-    generate_mock_sysex_file(file_c, "BankC")
-
-    with open(file_txt, "w") as f:
-        f.write("This is not a sysex file.")
-
+    # Everything that creates files lives inside the try, so the finally block
+    # cleans up after a failure during *setup* too -- not just after a failed
+    # assertion. A setup failure used to leave both test_scan_root/ in the repo
+    # and the temp data dir in %TEMP%.
     try:
+        os.makedirs(level3, exist_ok=True)
+        os.makedirs(empty_dir, exist_ok=True)
+
+        generate_mock_sysex_file(file_a, "BankA")
+        generate_mock_sysex_file(file_b, "BankB")
+        generate_mock_sysex_file(file_c, "BankC")
+
+        with open(file_txt, "w") as f:
+            f.write("This is not a sysex file.")
+
         # 2. Trigger the scan through the app's background runner function
         print(f"Scanning directory: {test_root}")
         run_background_scan(test_root)

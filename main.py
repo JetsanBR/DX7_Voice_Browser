@@ -22,6 +22,8 @@ import socket
 import sys
 import threading
 
+import paths
+
 # Keeps the Windows mutex handle alive for the process lifetime. If this is
 # garbage collected the single-instance guard silently stops working.
 _INSTANCE_MUTEX = None
@@ -219,9 +221,32 @@ def main():
     return 0
 
 
+def _run():
+    """Runs main(), turning any unhandled failure into something visible.
+
+    A --windowed build has sys.stderr set to None, so the default excepthook
+    writes nowhere: an exception escaping main() means the process disappears
+    with no window, no message and no clue. Both realistic startup failures land
+    here -- paths.user_data_dir() raising PermissionError from its mkdir, and
+    app.py raising RuntimeError when the bundled static assets are missing.
+    """
+    try:
+        return main()
+    except Exception:
+        try:
+            logging.getLogger("dx7.launcher").exception("Fatal startup error")
+            log_hint = f"\n\nDetails were written to:\n{paths.log_path()}"
+        except Exception:
+            log_hint = ""
+        _message_box(
+            "DX7 Voice Browser could not start." + log_hint
+        )
+        return 1
+
+
 if __name__ == "__main__":
     # Must come first: a frozen executable that touches multiprocessing at all,
     # directly or through a dependency, will otherwise re-run main() in every
     # child process and fork-bomb itself.
     multiprocessing.freeze_support()
-    sys.exit(main())
+    sys.exit(_run())

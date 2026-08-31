@@ -64,11 +64,42 @@ Four invariants that a frozen build breaks the moment you violate them:
    `fa-square-wave` are Pro and silently render as nothing.
 3. **Assume no stdout.** A `--windowed` build has `sys.stdout`/`stderr` set to
    `None`. Log via the `logging` module (it goes to a file), never `print()`, and
-   pass explicit `DEVNULL` handles to every `subprocess` call.
+   pass explicit `DEVNULL` handles to every `subprocess` call. When a frozen
+   build misbehaves, build the console variant first (`DX7_BUILD_CONSOLE=1`,
+   `--distpath dist-console`): it is the same bundle with the PE subsystem set
+   to console instead of GUI, so tracebacks and pywebview's startup lines are
+   actually visible. In the windowed build a crash before the window opens
+   produces no output at all. Ship `dist\` only — a console window next to the
+   app reads as broken. See the "two build variants" table in `README.md`.
 4. **Scanning is destructive** — `run_background_scan()` calls
    `database.clear_db()` first. Anything that triggers a scan automatically (the
    first-run demo seeding does) must first confirm the database is empty, or it
    will silently destroy a user's index.
+
+## Local-server security (don't regress)
+
+The API binds 127.0.0.1 on an ephemeral port with no authentication, and the
+front-end is same-origin with it. Three rules keep that safe:
+
+1. **Destructive endpoints validate against the index, not the filesystem.**
+   `delete_folder()` refuses any path that is not a `folder_path` in `voices`,
+   and `/api/reveal` refuses any file that is not indexed. Never reintroduce a
+   path that goes from a request body straight to `shutil.rmtree` — the frontend
+   only ever sends paths that came back from `/api/duplicates`, so the check
+   costs nothing.
+2. **Keep the Host/Origin guard** (`_guard_local_origin` in `app.py`). Without
+   it, DNS rebinding makes a remote page same-origin with this server, and the
+   browser's own protections no longer apply.
+3. **State-changing endpoints are POST**, including `/api/browse-folder` — a GET
+   is a CORS "simple request" that any page can fire cross-origin.
+
+Escape `LIKE` wildcards with `database._like_escape()` plus `ESCAPE` in the SQL
+whenever a path or user string is used in a `LIKE`: `_` and `%` are legal in
+Windows paths and `_` is common in patch-library folder names.
+
+Rendering rule for the frontend: patch names and file names come from arbitrary
+bytes on disk. Put them in the DOM with `textContent`, or run them through
+`escapeHtml()`. Never interpolate them into `innerHTML` directly.
 
 ## Architecture (don't break)
 - Backend: FastAPI (`app.py`), SQLite (`database.py`).

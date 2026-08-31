@@ -2,6 +2,9 @@
 const POLL_INTERVAL_MS   = 500;
 const SEARCH_DEBOUNCE_MS = 300;
 const TOAST_DURATION_MS  = 4000;
+// Consecutive scan-status poll failures tolerated before giving up. At 500ms
+// that is ~5s of silence, long enough to ride out a transient error.
+const MAX_POLL_FAILURES  = 10;
 
 // State Management
 let allVoices = [];      // Current page of grouped results from server (up to LIMIT)
@@ -9,6 +12,7 @@ let filteredVoices = []; // Sorted view for rendering
 let totalVoices = 0;     // Total matching unique patch names in the database
 let isScanning = false;
 let statusInterval = null;
+let pollFailures = 0;
 let searchDebounceTimer = null;
 let voicesAbortController = null;
 let currentSort = { key: 'name', asc: true };
@@ -40,8 +44,6 @@ const progressBarFill = document.getElementById('progress-bar-fill');
 
 const lcdStatus = document.getElementById('lcd-status');
 const lcdTotalVoices = document.getElementById('lcd-total-voices');
-const lcdActiveFile = document.getElementById('lcd-active-file');
-const lcdProgress = document.getElementById('lcd-progress');
 
 const searchInput = document.getElementById('search-input');
 const clearSearchBtn = document.getElementById('clear-search-btn');
@@ -99,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFolders();
     checkScanStatusOnLoad();
     setupEventListeners();
+    syncSortIndicators();
     prefillDemoPath();
 });
 
@@ -218,17 +221,41 @@ async function loadVoices(query = '') {
         sortAndRender();
         updateLcdVoicesCount(totalVoices);
     } catch (e) {
+        // A superseded request must not touch the spinner: the newer request is
+        // already in flight and owns it. `return` inside catch does not skip
+        // `finally`, so the reset lives here rather than in a finally block.
         if (e.name === 'AbortError') return;
         showToast(e.message, 'error');
-    } finally {
-        showLoading(false);
     }
+    showLoading(false);
+}
+
+// Fetches JSON, turning a non-OK response into a useful Error.
+//
+// The server reports failures as {"detail": "..."} (HTTPException) or
+// {"error": "..."} (the delete endpoint). A crashing server may return neither,
+// so the body is parsed defensively -- calling res.json() before checking
+// res.ok surfaces "Unexpected token '<'" instead of the real problem.
+async function fetchJson(url, options) {
+    const res = await fetch(url, options);
+    let body = null;
+    try {
+        body = await res.json();
+    } catch (e) {
+        body = null;
+    }
+    if (!res.ok) {
+        const detail = body && (body.detail || body.error);
+        throw new Error(detail || `Request failed (status ${res.status}).`);
+    }
+    if (body === null) throw new Error('Server returned an invalid response.');
+    return body;
 }
 
 // Open native OS folder picker and populate the directory input
 async function handleBrowseFolder() {
     try {
-        const response = await fetch('/api/browse-folder');
+        const response = await fetch('/api/browse-folder', { method: 'POST' });
         if (!response.ok) throw new Error('Browse dialog failed.');
         const data = await response.json();
         if (data.path) {
@@ -249,17 +276,11 @@ async function handleScanTrigger() {
     
     try {
         setScanButtonState(true);
-        const response = await fetch('/api/scan', {
+        await fetchJson('/api/scan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ directory })
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.detail || "Scan request failed.");
-        }
         
         showToast("Scan started in background.", "success");
         startPollingStatus();
@@ -276,6 +297,7 @@ function startPollingStatus() {
     setScanButtonState(true);
     progressContainer.classList.remove('hidden');
     
+    pollFailures = 0;
     statusInterval = setInterval(async () => {
         try {
             const response = await fetch('/api/scan-status');
@@ -301,8 +323,19 @@ function startPollingStatus() {
                 loadVoices();
                 loadFolders();
             }
+            pollFailures = 0;
         } catch (e) {
-            showToast('Connection error while polling scan status.', 'error');
+            // Without a cap this retries forever: an error toast every 500ms
+            // with SCAN and the directory input disabled until a page reload.
+            pollFailures++;
+            if (pollFailures >= MAX_POLL_FAILURES) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+                isScanning = false;
+                setScanButtonState(false);
+                progressContainer.classList.add('hidden');
+                showToast('Lost contact with the scanner. Please try again.', 'error');
+            }
         }
     }, POLL_INTERVAL_MS);
 }
@@ -319,8 +352,7 @@ async function handleClearDatabase() {
     }
     
     try {
-        const response = await fetch('/api/clear', { method: 'POST' });
-        const data = await response.json();
+        const data = await fetchJson('/api/clear', { method: 'POST' });
         if (!response.ok) throw new Error(data.detail || "Failed to clear database.");
         
         allVoices = [];
@@ -339,13 +371,11 @@ async function handleClearDatabase() {
 // Reveal file in Explorer
 async function revealInExplorer(filePath) {
     try {
-        const response = await fetch('/api/reveal', {
+        await fetchJson('/api/reveal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ file_path: filePath })
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || "Failed to reveal file.");
         showToast("File selected in Explorer.", "success");
     } catch (e) {
         showToast(e.message, 'error');
@@ -369,9 +399,7 @@ async function showFilesModal(voiceName, patchType) {
     try {
         const params = new URLSearchParams({ name: voiceName });
         if (patchType) params.set('patch_type', patchType);
-        const response = await fetch(`/api/voices/files?${params}`);
-        if (!response.ok) throw new Error("Failed to fetch file list.");
-        const files = await response.json();
+        const files = await fetchJson(`/api/voices/files?${params}`);
 
         modalLoading.classList.add('hidden');
         renderModalList(files);
@@ -379,7 +407,7 @@ async function showFilesModal(voiceName, patchType) {
         modalLoading.classList.add('hidden');
         const errEl = document.createElement('div');
         errEl.className = 'modal-error';
-        errEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ';
+        errEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ';
         errEl.append(e.message);
         modalList.appendChild(errEl);
     }
@@ -404,7 +432,7 @@ function renderModalList(files) {
 
         const nameEl = document.createElement('div');
         nameEl.className = 'modal-file-name';
-        nameEl.innerHTML = '<i class="fa-solid fa-file-audio"></i>';
+        nameEl.innerHTML = '<i class="fa-solid fa-file-audio" aria-hidden="true"></i>';
         const nameSpan = document.createElement('span');
         nameSpan.textContent = f.file_name;
         const posPill = document.createElement('span');
@@ -428,7 +456,8 @@ function renderModalList(files) {
             const detailsBtn = document.createElement('button');
             detailsBtn.className = 'btn-reveal modal-reveal-btn';
             detailsBtn.title = 'View voice parameters';
-            detailsBtn.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+        detailsBtn.setAttribute('aria-label', 'View voice parameters');
+            detailsBtn.innerHTML = '<i class="fa-solid fa-circle-info" aria-hidden="true"></i>';
             detailsBtn.addEventListener('click', () => {
                 closeFilesModal();
                 showVoiceDetail(f.id);
@@ -439,7 +468,8 @@ function renderModalList(files) {
         const revealBtn = document.createElement('button');
         revealBtn.className = 'btn-reveal modal-reveal-btn';
         revealBtn.title = 'Reveal in Explorer';
-        revealBtn.innerHTML = '<i class="fa-regular fa-folder-open"></i>';
+        revealBtn.setAttribute('aria-label', 'Reveal in Explorer');
+        revealBtn.innerHTML = '<i class="fa-regular fa-folder-open" aria-hidden="true"></i>';
         revealBtn.addEventListener('click', () => revealInExplorer(f.file_path));
         actionsEl.appendChild(revealBtn);
 
@@ -489,18 +519,13 @@ function sortAndRender() {
 }
 
 // Sorting logic
-function handleSort(key) {
-    if (currentSort.key === key) {
-        currentSort.asc = !currentSort.asc;
-    } else {
-        currentSort.key = key;
-        currentSort.asc = true;
-    }
-    
-    // Update visual header indicator arrows
+// Reflects currentSort in the header arrows and aria-sort. Also called on load:
+// the server returns name-ascending, so shipping "unsorted" arrows would state
+// the opposite of what the user is looking at.
+function syncSortIndicators() {
     tableHeaders.forEach(th => {
         const icon = th.querySelector('i');
-        if (th.getAttribute('data-sort') === key) {
+        if (th.getAttribute('data-sort') === currentSort.key) {
             icon.className = currentSort.asc ? 'fa-solid fa-sort-up' : 'fa-solid fa-sort-down';
             th.classList.add('active-sort');
             th.setAttribute('aria-sort', currentSort.asc ? 'ascending' : 'descending');
@@ -510,7 +535,17 @@ function handleSort(key) {
             th.removeAttribute('aria-sort');
         }
     });
+}
+
+function handleSort(key) {
+    if (currentSort.key === key) {
+        currentSort.asc = !currentSort.asc;
+    } else {
+        currentSort.key = key;
+        currentSort.asc = true;
+    }
     
+    syncSortIndicators();
     sortData();
     renderVoicesTable();
 }
@@ -579,7 +614,12 @@ function renderVoicesTable() {
         const typeCfg = TYPE_CFG[voice.patch_type] || { label: voice.patch_type || '?', cls: '', icon: 'fa-question' };
         const typeBadge = document.createElement('span');
         typeBadge.className = `type-badge ${typeCfg.cls}`;
-        typeBadge.innerHTML = `<i class="fa-solid ${typeCfg.icon}"></i> ${typeCfg.label}`;
+        // The `|| { label: voice.patch_type ... }` fallback above puts a raw
+        // server value in `label`, so build this from nodes rather than markup.
+        const typeIcon = document.createElement('i');
+        typeIcon.className = `fa-solid ${typeCfg.icon}`;
+        typeIcon.setAttribute('aria-hidden', 'true');
+        typeBadge.append(typeIcon, ' ', typeCfg.label);
         tdType.appendChild(typeBadge);
 
         // Position Column
@@ -593,7 +633,15 @@ function renderVoicesTable() {
         const tdFile = document.createElement('td');
         const fileWrapper = document.createElement('div');
         fileWrapper.className = 'file-wrapper';
-        fileWrapper.innerHTML = `<i class="fa-solid fa-file-audio"></i> <span>${voice.file_name}</span>`;
+        const fileIcon = document.createElement('i');
+        fileIcon.className = 'fa-solid fa-file-audio';
+        fileIcon.setAttribute('aria-hidden', 'true');
+        // File names come from disk and are rendered verbatim — set them as a
+        // text node, never as markup. (A file called "<img onerror=...>.syx"
+        // would otherwise execute here, same-origin with the delete APIs.)
+        const fileNameSpan = document.createElement('span');
+        fileNameSpan.textContent = voice.file_name;
+        fileWrapper.append(fileIcon, ' ', fileNameSpan);
         tdFile.appendChild(fileWrapper);
 
         // Folder Path Column
@@ -610,14 +658,14 @@ function renderVoicesTable() {
             const badge = document.createElement('button');
             badge.className = 'file-count-badge file-count-dup';
             badge.title = `${fileCount} files contain this patch — click to view all`;
-            badge.innerHTML = `<i class="fa-solid fa-layer-group"></i> ${fileCount}`;
+            badge.innerHTML = `<i class="fa-solid fa-layer-group" aria-hidden="true"></i> ${fileCount}`;
             badge.addEventListener('click', () => showFilesModal(voice.voice_name, voice.patch_type));
             tdFiles.appendChild(badge);
         } else {
             const badge = document.createElement('span');
             badge.className = 'file-count-badge file-count-single';
             badge.title = '1 file contains this patch';
-            badge.innerHTML = `<i class="fa-solid fa-file"></i> 1`;
+            badge.innerHTML = `<i class="fa-solid fa-file" aria-hidden="true"></i> 1`;
             tdFiles.appendChild(badge);
         }
 
@@ -627,15 +675,17 @@ function renderVoicesTable() {
         if (voice.patch_type !== 'Performance') {
             const detailsBtn = document.createElement('button');
             detailsBtn.className = 'btn-reveal';
-            detailsBtn.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            detailsBtn.innerHTML = '<i class="fa-solid fa-circle-info" aria-hidden="true"></i>';
             detailsBtn.title = "View voice parameters";
+        detailsBtn.setAttribute('aria-label', "View voice parameters");
             detailsBtn.addEventListener('click', () => showVoiceDetail(voice.id));
             tdAction.appendChild(detailsBtn);
         }
         const revealBtn = document.createElement('button');
         revealBtn.className = 'btn-reveal';
-        revealBtn.innerHTML = '<i class="fa-regular fa-folder-open"></i>';
+        revealBtn.innerHTML = '<i class="fa-regular fa-folder-open" aria-hidden="true"></i>';
         revealBtn.title = "Reveal file in Windows Explorer";
+        revealBtn.setAttribute('aria-label', "Reveal file in Windows Explorer");
         revealBtn.addEventListener('click', () => revealInExplorer(voice.file_path));
         tdAction.appendChild(revealBtn);
 
@@ -709,9 +759,7 @@ function updateProgressBar(state) {
 
 async function loadFolders() {
     try {
-        const response = await fetch('/api/folders');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const paths = await response.json();
+        const paths = await fetchJson('/api/folders');
         folderTreeRoot.innerHTML = '';
         expandedNodes.clear();
         const tree = buildFolderTree(paths);
@@ -887,7 +935,7 @@ function selectTreeFolder(path) {
             selectedFolder === null ? nodePath === null : nodePath === selectedFolder
         );
     });
-    loadVoices(searchInput.value);
+    loadVoices(searchInput.value.trim());
 }
 
 function toggleFolderTree() {
@@ -904,7 +952,7 @@ function toggleFolderTree() {
 function setTypeFilter(type) {
     selectedType = type;
     typeTabs.forEach(t => t.classList.toggle('active', t.dataset.type === type));
-    loadVoices(searchInput.value);
+    loadVoices(searchInput.value.trim());
 }
 
 // -----------------------------------------------------------------------
@@ -926,10 +974,19 @@ function switchTab(tab) {
 // Voice Parameters Detail View
 // -----------------------------------------------------------------------
 
+// Escapes a value for interpolation into an HTML template literal.
+//
+// Serializing a text node via innerHTML only escapes & < >, which is enough in
+// element-content position but NOT inside an attribute — so quotes are escaped
+// explicitly here. That makes this helper safe in both positions, including
+// title="${escapeHtml(x)}".
 function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str == null ? '' : String(str);
-    return div.innerHTML;
+    return (str == null ? '' : String(str))
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function signedStr(n) {
@@ -967,14 +1024,14 @@ function envSvg(rates, levels, opts) {
     if (o.grid) {
         for (let i = 0; i < 4; i++) {
             const y = yTop + i * ((yBot - yTop) / 3);
-            extras += `<line x1="${padL - 2}" y1="${y}" x2="${W - padR + 2}" y2="${y}" stroke="#1c2127" stroke-width="1" />`;
+            extras += `<line x1="${padL - 2}" y1="${y}" x2="${W - padR + 2}" y2="${y}" stroke="var(--ds-elevated-2)" stroke-width="1" />`;
         }
     }
     if (o.keys) {
-        extras += `<line x1="${P[0][0]}" y1="${yTop}" x2="${P[0][0]}" y2="${yBot}" stroke="#3a434c" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke" />`;
-        extras += `<line x1="${keyOffX}" y1="${yTop}" x2="${keyOffX}" y2="${yBot}" stroke="#3a434c" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke" />`;
+        extras += `<line x1="${P[0][0]}" y1="${yTop}" x2="${P[0][0]}" y2="${yBot}" stroke="var(--ds-text-4)" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke" />`;
+        extras += `<line x1="${keyOffX}" y1="${yTop}" x2="${keyOffX}" y2="${yBot}" stroke="var(--ds-text-4)" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke" />`;
     }
-    extras += `<line x1="0" y1="${yBot}" x2="${W}" y2="${yBot}" stroke="#242a31" stroke-width="1" />`;
+    extras += `<line x1="0" y1="${yBot}" x2="${W}" y2="${yBot}" stroke="var(--ds-border)" stroke-width="1" />`;
 
     let fillPoly = '';
     if (o.fill) {
@@ -991,9 +1048,9 @@ function envSvg(rates, levels, opts) {
 
     let labels = '';
     if (o.labels) {
-        const tf = 'JetBrains Mono, monospace', tc = '#8a929b';
+        const tf = 'var(--ds-font-mono)', tc = 'var(--ds-text-3)';
         const T = (x, y, s, anchor) =>
-            `<text x="${rnd(x)}" y="${rnd(y)}" font-size="9" fill="${tc}" font-family="${tf}" text-anchor="${anchor || 'middle'}">${s}</text>`;
+            `<text x="${rnd(x)}" y="${rnd(y)}" font-size="var(--ds-fs-micro)" fill="${tc}" font-family="${tf}" text-anchor="${anchor || 'middle'}">${s}</text>`;
         labels += T(P[1][0], P[1][1] - 6, 'L1');
         labels += T(P[2][0], P[2][1] - 6, 'L2');
         labels += T(P[3][0], P[3][1] - 6, 'L3');
@@ -1007,9 +1064,9 @@ function envSvg(rates, levels, opts) {
 
     let keyText = '';
     if (o.keyText) {
-        const tf = 'JetBrains Mono, monospace';
-        keyText += `<text x="${P[0][0]}" y="${H - 4}" font-size="8.5" fill="#5a636b" font-family="${tf}" text-anchor="start">KEY ON</text>`;
-        keyText += `<text x="${keyOffX}" y="${H - 4}" font-size="8.5" fill="#5a636b" font-family="${tf}" text-anchor="middle">KEY OFF</text>`;
+        const tf = 'var(--ds-font-mono)';
+        keyText += `<text x="${P[0][0]}" y="${H - 4}" font-size="var(--ds-fs-micro)" fill="var(--ds-text-4)" font-family="${tf}" text-anchor="start">KEY ON</text>`;
+        keyText += `<text x="${keyOffX}" y="${H - 4}" font-size="var(--ds-fs-micro)" fill="var(--ds-text-4)" font-family="${tf}" text-anchor="middle">KEY OFF</text>`;
     }
 
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="display:block;overflow:visible;">${extras}${fillPoly}${line}${dots}${labels}${keyText}</svg>`;
@@ -1050,6 +1107,10 @@ function waveSvg(shape, opts) {
 }
 
 async function showVoiceDetail(voiceId) {
+    // The button that opened this view is about to be hidden, so remember it
+    // to restore focus on the way back. Otherwise focus falls to <body> and the
+    // next Tab restarts from the top of the document.
+    detailReturnFocus = document.activeElement;
     tabBar.classList.add('hidden');
     sectionExplorer.classList.add('hidden');
     sectionCleanup.classList.add('hidden');
@@ -1060,14 +1121,11 @@ async function showVoiceDetail(voiceId) {
     detailKeymode.innerHTML = '';
     detailControllers.innerHTML = '';
     window.scrollTo(0, 0);
+    // Move focus into the view so screen readers land on the new content.
+    sectionDetail.focus();
 
     try {
-        const response = await fetch(`/api/voices/${voiceId}/parameters`);
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.detail || `Failed to load voice parameters (status ${response.status}).`);
-        }
-        const data = await response.json();
+        const data = await fetchJson(`/api/voices/${voiceId}/parameters`);
         renderVoiceDetail(data);
     } catch (e) {
         showToast(e.message, 'error');
@@ -1075,10 +1133,17 @@ async function showVoiceDetail(voiceId) {
     }
 }
 
+// Element to restore focus to when the detail view closes.
+let detailReturnFocus = null;
+
 function backFromDetail() {
     sectionDetail.classList.add('hidden');
     tabBar.classList.remove('hidden');
     switchTab(previousTab);
+    if (detailReturnFocus && document.contains(detailReturnFocus)) {
+        detailReturnFocus.focus();
+    }
+    detailReturnFocus = null;
 }
 
 function renderVoiceDetail(data) {
@@ -1123,7 +1188,7 @@ function renderDetailHeader(data) {
             <div>
                 <div class="vd-name-row">
                     <h1 class="vd-name">${escapeHtml(data.voice_name)}</h1>
-                    <span class="type-badge ${typeCfg.cls}"><i class="fa-solid ${typeCfg.icon}"></i> ${typeCfg.label}</span>
+                    <span class="type-badge ${escapeHtml(typeCfg.cls)}"><i class="fa-solid ${escapeHtml(typeCfg.icon)}" aria-hidden="true"></i> ${escapeHtml(typeCfg.label)}</span>
                 </div>
                 <div class="vd-meta">${escapeHtml(data.file_name)} &middot; POS ${data.position} &middot; ALG ${data.algorithm}</div>
             </div>
@@ -1140,7 +1205,7 @@ function renderDetailOperators(data) {
     const tiles = data.operators.map(op => {
         const isCarrier = carriers.has(op.op);
         const fbIcon = op.op === fbOp
-            ? '<i class="fa-solid fa-rotate-right vd-fb-icon" title="Feedback operator"></i>'
+            ? '<i class="fa-solid fa-rotate-right vd-fb-icon" aria-hidden="true" title="Feedback operator"></i>'
             : '';
         const meterPct = Math.round((op.level / 99) * 100);
         const eg = envSvg(op.eg_rate, op.eg_level, {
@@ -1165,8 +1230,8 @@ function renderDetailOperators(data) {
                 <span class="op-eg-label">EG-L</span><span class="op-eg-value">${op.eg_level.join(' &middot; ')}</span>
             </div>
             <div class="op-summary">
-                <div>${op.osc_mode.toUpperCase()} COARSE ${op.freq_coarse} FINE ${op.freq_fine} &middot; DET ${signedStr(op.detune)} &middot; RS ${op.rate_scaling}</div>
-                <div>${op.left_curve_name}/${op.left_depth} &middot; BP ${op.break_point_name} &middot; ${op.right_curve_name}/${op.right_depth}</div>
+                <div>${escapeHtml(op.osc_mode.toUpperCase())} COARSE ${escapeHtml(op.freq_coarse)} FINE ${escapeHtml(op.freq_fine)} &middot; DET ${escapeHtml(signedStr(op.detune))} &middot; RS ${escapeHtml(op.rate_scaling)}</div>
+                <div>${escapeHtml(op.left_curve_name)}/${escapeHtml(op.left_depth)} &middot; BP ${escapeHtml(op.break_point_name)} &middot; ${escapeHtml(op.right_curve_name)}/${escapeHtml(op.right_depth)}</div>
                 <div>KEY VEL ${op.vel_sens} &middot; AM SENS ${op.amp_mod_sens}</div>
             </div>
         </div>`;
@@ -1193,7 +1258,7 @@ function renderDetailModulation(data) {
         <div class="vd-section-heading"><span class="vd-section-index">02</span><h2>Modulation</h2></div>
         <div class="vd-mod-grid">
             <div class="vd-card-inner">
-                <div class="vd-card-title"><i class="fa-solid fa-wave-square" style="color:var(--ds-signal);"></i> LFO <span class="vd-card-tag">${escapeHtml(lfo.wave_name)}</span></div>
+                <div class="vd-card-title"><i class="fa-solid fa-wave-square" aria-hidden="true" style="color:var(--ds-signal);"></i> LFO <span class="vd-card-tag">${escapeHtml(lfo.wave_name)}</span></div>
                 <div class="vd-inset-panel vd-lfo-panel">${lfoWave}</div>
                 <div class="vd-kv-grid">
                     <div><span>Wave</span><span>${escapeHtml(lfo.wave_name)}</span></div>
@@ -1206,7 +1271,7 @@ function renderDetailModulation(data) {
                 </div>
             </div>
             <div class="vd-card-inner">
-                <div class="vd-card-title"><i class="fa-solid fa-chart-line" style="color:var(--ds-perf);"></i> Pitch EG <span class="vd-card-tag">RANGE ${escapeHtml(a.pitch_eg_range)}</span></div>
+                <div class="vd-card-title"><i class="fa-solid fa-chart-line" aria-hidden="true" style="color:var(--ds-perf);"></i> Pitch EG <span class="vd-card-tag">RANGE ${escapeHtml(a.pitch_eg_range)}</span></div>
                 <div class="vd-inset-panel">${pegSvg}</div>
                 <div class="vd-stat-row">
                     <span>RATES <strong>${peg.rate.join(' &middot; ')}</strong></span>
@@ -1245,11 +1310,11 @@ function renderDetailControllers(data) {
         </div>
         <div class="vd-two-col ${defaultedClass(a.present)}">
             <div class="vd-card-inner">
-                <div class="vd-card-title"><i class="fa-solid fa-lungs" style="color:var(--ds-signal);"></i> BC / AT / MW</div>
+                <div class="vd-card-title"><i class="fa-solid fa-lungs" aria-hidden="true" style="color:var(--ds-signal);"></i> BC / AT / MW</div>
                 ${buildTable(['PM', 'AM', 'EG BIAS', 'P.BIAS'], rowsA)}
             </div>
             <div class="vd-card-inner">
-                <div class="vd-card-title"><i class="fa-solid fa-sliders" style="color:var(--ds-signal);"></i> FC1 / FC2 / MIDI</div>
+                <div class="vd-card-title"><i class="fa-solid fa-sliders" aria-hidden="true" style="color:var(--ds-signal);"></i> FC1 / FC2 / MIDI</div>
                 ${buildTable(['PM', 'AM', 'EG BIAS', 'VOL'], rowsB)}
                 <div class="vd-footnote">FC1 &rarr; CS1: ${a.fc1_as_cs1 ? 'On' : 'Off'}</div>
             </div>
@@ -1276,14 +1341,14 @@ function renderDetailKeyMode(data) {
         </div>
         <div class="vd-two-col ${defaultedClass(a.present)}">
             <div class="vd-card-inner">
-                <div class="vd-card-title"><i class="fa-solid fa-object-group" style="color:var(--ds-signal);"></i> Key Mode</div>
+                <div class="vd-card-title"><i class="fa-solid fa-object-group" aria-hidden="true" style="color:var(--ds-signal);"></i> Key Mode</div>
                 <div class="vd-kv-stack">
                     <div><span>Assign</span><span>${escapeHtml(a.key_mode_assign)}</span></div>
                     <div><span>Unison Detune</span><span>${a.unison_detune}</span></div>
                 </div>
             </div>
             <div class="vd-card-inner">
-                <div class="vd-card-title"><i class="fa-solid fa-arrows-left-right" style="color:var(--ds-signal);"></i> Pitch Bend &amp; Portamento</div>
+                <div class="vd-card-title"><i class="fa-solid fa-arrows-left-right" aria-hidden="true" style="color:var(--ds-signal);"></i> Pitch Bend &amp; Portamento</div>
                 <div class="vd-kv-grid">
                     <div><span>Bend Mode</span><span>${escapeHtml(a.pitch_bend_mode)}</span></div>
                     <div><span>Bend Range</span><span>${a.pitch_bend_range} semi</span></div>
@@ -1312,9 +1377,7 @@ async function loadDuplicates() {
     findDupSpinner.classList.remove('hidden');
 
     try {
-        const res = await fetch('/api/duplicates');
-        if (!res.ok) throw new Error((await res.json()).detail || 'Failed to load duplicates.');
-        const groups = await res.json();
+        const groups = await fetchJson('/api/duplicates');
         dupLoading.classList.add('hidden');
 
         if (groups.length === 0) {
@@ -1344,18 +1407,18 @@ function renderDuplicateGroups(groups) {
         groupEl.innerHTML = `
             <div class="dup-group-header">
                 <span class="dup-group-badge">
-                    <i class="fa-solid fa-copy"></i>
+                    <i class="fa-solid fa-copy" aria-hidden="true"></i>
                     ${group.folders.length} folders &mdash; identical content
                 </span>
                 <span class="dup-file-count-label">
-                    <i class="fa-solid fa-file-audio"></i>
+                    <i class="fa-solid fa-file-audio" aria-hidden="true"></i>
                     ${fileCount} file${fileCount !== 1 ? 's' : ''} each
                 </span>
             </div>
             <div class="dup-folder-list"></div>
             <div class="dup-group-footer">
                 <button class="btn btn-danger dup-delete-btn">
-                    <i class="fa-solid fa-trash-can"></i> DELETE UNSELECTED
+                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i> DELETE UNSELECTED
                 </button>
             </div>
         `;
@@ -1373,7 +1436,7 @@ function renderDuplicateGroups(groups) {
                 <label class="dup-radio-label" for="${radioId}">
                     <input type="radio" id="${radioId}" name="${radioName}"
                            ${idx === 0 ? 'checked' : ''}>
-                    <span class="dup-radio-indicator"><i class="fa-solid fa-check"></i></span>
+                    <span class="dup-radio-indicator"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
                     <span class="dup-keep-label">${idx === 0 ? 'KEEP' : 'DEL'}</span>
                 </label>
                 <div class="dup-folder-info">
@@ -1381,7 +1444,7 @@ function renderDuplicateGroups(groups) {
                     <span class="dup-folder-meta">${folder.file_count} file${folder.file_count !== 1 ? 's' : ''}</span>
                 </div>
                 <button class="btn-reveal dup-reveal-btn" title="Reveal in Explorer">
-                    <i class="fa-regular fa-folder-open"></i>
+                    <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
                 </button>
             `;
             // Set user-derived data via DOM properties to avoid XSS
@@ -1437,27 +1500,35 @@ async function handleDeleteGroup(groupEl) {
     deleteBtn.disabled = true;
     deleteBtn.innerHTML = '<span class="spinner"></span> DELETING...';
 
+    let deleted = 0;
     let errors = 0;
     for (const folder_path of toDelete) {
         try {
-            const res = await fetch('/api/delete-folder', {
+            // fetchJson throws on a non-OK status, including the {error: ...}
+            // body returned when rmtree fails. Deciding success purely on the
+            // absence of an `error` key previously turned a failed delete into
+            // a green "Deleted N folder(s) successfully."
+            const result = await fetchJson('/api/delete-folder', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ folder_path })
             });
-            const result = await res.json();
             if (result.error) {
                 errors++;
                 showToast(`Error: ${result.error}`, 'error');
+            } else {
+                deleted++;
             }
         } catch (e) {
             errors++;
-            showToast(`Network error deleting ${folder_path}`, 'error');
+            showToast(`Could not delete ${folder_path}: ${e.message}`, 'error');
         }
     }
 
     if (errors === 0) {
-        showToast(`Deleted ${toDelete.length} folder(s) successfully.`, 'success');
+        showToast(`Deleted ${deleted} folder(s) successfully.`, 'success');
+    } else if (deleted > 0) {
+        showToast(`Deleted ${deleted} of ${toDelete.length}; ${errors} failed.`, 'error');
     }
 
     // Refresh the duplicate list to reflect the new state

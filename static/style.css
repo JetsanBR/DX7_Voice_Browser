@@ -20,15 +20,6 @@ body {
     justify-content: center;
 }
 
-/* Ambient Background Glowing Orbs */
-
-
-
-
-
-
-
-
 /* Container */
 .container {
     width: 100%;
@@ -38,126 +29,10 @@ body {
     gap: 2rem;
 }
 
-/* Header Component */
-.app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    border-bottom: 2px solid var(--border-card);
-    padding-bottom: 1.5rem;
-}
-
 .brand {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-}
-
-.dx7-badge {
-    background-color: var(--accent-teal-dark);
-    color: var(--accent-teal);
-    border: 1px solid var(--accent-teal);
-    font-family: var(--ds-font-ui);
-    font-weight: 700;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.6rem;
-    border-radius: 4px;
-    width: fit-content;
-    box-shadow: 0 0 6px var(--accent-teal-glow);
-    letter-spacing: 1px;
-}
-
-.brand h1 {
-    font-family: var(--ds-font-ui);
-    font-weight: 700;
-    font-size: 2.2rem;
-    letter-spacing: 2px;
-    color: var(--text-primary);
-}
-
-.brand .accent-text {
-    color: var(--accent-teal);
-}
-
-.subtitle {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    font-weight: 300;
-}
-
-/* Retro LCD Display Screen styling */
-.lcd-panel {
-    background-color: var(--lcd-bg);
-    border: 3px solid var(--border-card);
-    border-radius: 6px;
-    padding: 0.8rem 1.2rem;
-    width: 320px;
-    min-height: 105px;
-    box-shadow: var(--shadow-lcd);
-    position: relative;
-    overflow: hidden;
-}
-
-.lcd-scanlines {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: repeating-linear-gradient(
-        rgba(0, 0, 0, 0) 0px,
-        rgba(0, 0, 0, 0.2) 1px,
-        rgba(0, 0, 0, 0.2) 2px,
-        rgba(0, 0, 0, 0) 3px
-    );
-    pointer-events: none;
-    z-index: 2;
-}
-
-.lcd-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    font-family: var(--ds-font-mono);
-    font-size: 0.85rem;
-    z-index: 1;
-    position: relative;
-}
-
-.lcd-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.lcd-label {
-    color: var(--text-muted);
-    font-weight: bold;
-    letter-spacing: 1px;
-}
-
-.lcd-value {
-    color: var(--lcd-text);
-    letter-spacing: 0.5px;
-}
-
-.lcd-value.status-idle {
-    color: hsl(150, 100%, 50%);
-}
-
-.lcd-value.status-scanning {
-    color: hsl(35, 100%, 50%);
-    animation: pulse 1s infinite alternate;
-}
-
-.scroll-text {
-    max-width: 190px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: right;
 }
 
 @keyframes pulse {
@@ -171,16 +46,16 @@ body {
     border: 1px solid var(--border-card);
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--ds-shadow);
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .card:hover {
     border-color: var(--border-hover);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--ds-shadow-lg);
 }
 
-.deck-title, .explorer-header {
+.explorer-header {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -188,40 +63,15 @@ body {
     color: var(--text-primary);
 }
 
-.deck-title i, .explorer-title i {
+.explorer-title i {
     color: var(--accent-teal);
-    font-size: 1.25rem;
+    font-size: var(--ds-fs-icon);
 }
 
-.deck-title h2, .explorer-title h2 {
-    font-size: 1.1rem;
+.explorer-title h2 {
+    font-size: var(--ds-fs-h3);
     font-weight: 700;
     letter-spacing: 1px;
-}
-
-/* Scan Form & inputs */
-.scan-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-
-.input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.input-group label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    letter-spacing: 0.5px;
-}
-
-.input-with-button {
-    display: flex;
-    gap: 0.75rem;
 }
 
 .input-wrapper {
@@ -235,17 +85,17 @@ body {
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: var(--ds-fs-body);
 }
 
 .input-wrapper input {
     width: 100%;
-    background-color: hsla(225, 20%, 4%, 0.8);
+    background-color: var(--ds-scrim);
     border: 1px solid var(--border-card);
     border-radius: 8px;
     padding: 0.8rem 1rem 0.8rem 2.8rem;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: var(--ds-fs-body);
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
@@ -262,7 +112,7 @@ body {
     justify-content: center;
     gap: 0.5rem;
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: var(--ds-fs-ui);
     font-weight: 600;
     padding: 0.8rem 1.5rem;
     border-radius: 8px;
@@ -278,7 +128,7 @@ body {
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: #46e8cd;
+    background-color: var(--ds-signal-hover);
     color: var(--ds-signal-ink);
 }
 
@@ -288,19 +138,14 @@ body {
 }
 
 .btn-danger {
-    background-color: hsla(352, 75%, 20%, 0.5);
+    background-color: var(--ds-danger-fill);
     color: var(--accent-red);
     border: 1px solid var(--accent-red);
 }
 
 .btn-danger:hover {
     background-color: var(--accent-red);
-    color: white;
-}
-
-.deck-actions {
-    display: flex;
-    justify-content: flex-end;
+    color: var(--ds-text);
 }
 
 /* Loading Spinners */
@@ -324,7 +169,7 @@ body {
 
 /* Local Scan Progress Indicator */
 .progress-container {
-    background-color: hsla(225, 20%, 4%, 0.8);
+    background-color: var(--ds-scrim);
     border: 1px solid var(--border-card);
     border-radius: 8px;
     padding: 1rem;
@@ -337,7 +182,7 @@ body {
 .progress-info {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8rem;
+    font-size: var(--ds-fs-sm);
 }
 
 #progress-filename {
@@ -354,7 +199,7 @@ body {
 }
 
 .progress-bar-bg {
-    background-color: hsl(225, 12%, 15%);
+    background-color: var(--ds-elevated-2);
     height: 6px;
     border-radius: 3px;
     overflow: hidden;
@@ -397,12 +242,12 @@ body {
 
 .search-wrapper input {
     width: 100%;
-    background-color: hsla(225, 20%, 4%, 0.8);
+    background-color: var(--ds-scrim);
     border: 1px solid var(--border-card);
     border-radius: 8px;
     padding: 0.7rem 2.5rem;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: var(--ds-fs-ui);
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
@@ -422,7 +267,7 @@ body {
     color: var(--text-muted);
     cursor: pointer;
     padding: 0.2rem;
-    font-size: 0.95rem;
+    font-size: var(--ds-fs-body);
     display: none; /* Controlled by JS */
 }
 
@@ -432,12 +277,12 @@ body {
 
 /* Result counter bar */
 .result-counter {
-    font-size: 0.78rem;
+    font-size: var(--ds-fs-cap);
     font-family: var(--ds-font-mono);
     color: var(--text-muted);
     padding: 0.4rem 0.8rem;
     margin-bottom: 0.75rem;
-    background: hsla(225, 20%, 4%, 0.5);
+    background: var(--ds-scrim-soft);
     border: 1px solid var(--border-card);
     border-radius: 6px;
 }
@@ -467,18 +312,18 @@ body {
 }
 
 .empty-icon {
-    font-size: 3rem;
+    font-size: var(--ds-fs-icon-xl);
     color: var(--text-muted);
     opacity: 0.5;
 }
 
 .empty-state h3 {
-    font-size: 1.1rem;
+    font-size: var(--ds-fs-h3);
     font-weight: 600;
 }
 
 .empty-state p {
-    font-size: 0.85rem;
+    font-size: var(--ds-fs-ui);
     color: var(--text-muted);
     max-width: 320px;
 }
@@ -498,7 +343,7 @@ body {
 }
 
 .table-scroll-wrapper::-webkit-scrollbar-track {
-    background: hsla(225, 20%, 4%, 0.5);
+    background: var(--ds-scrim-soft);
 }
 
 .table-scroll-wrapper::-webkit-scrollbar-thumb {
@@ -513,12 +358,12 @@ body {
 .voices-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    font-size: var(--ds-fs-ui);
     text-align: left;
 }
 
 .voices-table th {
-    background-color: hsla(225, 20%, 4%, 0.85);
+    background-color: var(--ds-scrim);
     color: var(--text-secondary);
     font-weight: 600;
     padding: 0.9rem 1.2rem;
@@ -526,17 +371,21 @@ body {
     top: 0;
     z-index: 10;
     border-bottom: 2px solid var(--border-card);
-    cursor: pointer;
     user-select: none;
     white-space: nowrap;
 }
 
-.voices-table th:hover {
+/* Scoped to [data-sort]: Type, Folder Path and Action are not sortable. */
+.voices-table th[data-sort] {
+    cursor: pointer;
+}
+
+.voices-table th[data-sort]:hover {
     color: var(--accent-teal);
 }
 
 .voices-table th i {
-    font-size: 0.75rem;
+    font-size: var(--ds-fs-cap);
     margin-left: 0.25rem;
     opacity: 0.6;
 }
@@ -553,7 +402,7 @@ body {
 }
 
 .voices-table tbody tr:hover {
-    background-color: hsla(172, 100%, 45%, 0.03);
+    background-color: var(--ds-signal-wash);
 }
 
 .voices-table tbody tr:hover td {
@@ -576,12 +425,12 @@ body {
 }
 
 .pos-pill {
-    background-color: hsla(225, 20%, 4%, 0.7);
+    background-color: var(--ds-scrim);
     border: 1px solid var(--border-card);
     color: var(--text-muted);
     font-family: var(--ds-font-mono);
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: var(--ds-fs-sm);
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
     display: inline-block;
@@ -618,7 +467,7 @@ body {
 
 .file-wrapper i {
     color: var(--text-muted);
-    font-size: 0.95rem;
+    font-size: var(--ds-fs-body);
 }
 
 .voices-table tbody tr:hover .file-wrapper i {
@@ -627,7 +476,7 @@ body {
 
 .col-path {
     width: 25%;
-    font-size: 0.8rem;
+    font-size: var(--ds-fs-sm);
     color: var(--text-muted);
     max-width: 200px;
     white-space: nowrap;
@@ -660,7 +509,7 @@ body {
     gap: 0.35rem;
     padding: 0.25rem 0.6rem;
     border-radius: 20px;
-    font-size: 0.78rem;
+    font-size: var(--ds-fs-cap);
     font-family: var(--font-mono);
     font-weight: 600;
     line-height: 1;
@@ -668,14 +517,14 @@ body {
 }
 
 .file-count-single {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--ds-hairline-strong);
     border: 1px solid var(--border-card);
     color: var(--text-muted);
     cursor: default;
 }
 
 .file-count-dup {
-    background: rgba(0, 245, 212, 0.08);
+    background: var(--ds-signal-fill-soft);
     border: 1px solid var(--accent-teal);
     color: var(--accent-teal);
     cursor: pointer;
@@ -683,7 +532,7 @@ body {
 }
 
 .file-count-dup:hover {
-    background: rgba(0, 245, 212, 0.18);
+    background: var(--ds-signal-line);
     transform: scale(1.05);
 }
 
@@ -691,7 +540,7 @@ body {
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
+    background: var(--ds-backdrop);
     z-index: 900;
     display: flex;
     align-items: center;
@@ -704,7 +553,7 @@ body {
 }
 
 .modal-panel {
-    background: hsl(225, 25%, 9%);
+    background: var(--ds-surface);
     border: 1px solid var(--border-card);
     border-radius: 12px;
     box-shadow: var(--ds-shadow-lg);
@@ -719,7 +568,7 @@ body {
 .modal-header {
     padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--border-card);
-    background: rgba(0, 245, 212, 0.04);
+    background: var(--ds-signal-wash);
 }
 
 .modal-title-row {
@@ -730,12 +579,12 @@ body {
 }
 
 .modal-title-row i {
-    font-size: 1.1rem;
+    font-size: var(--ds-fs-h3);
 }
 
 .modal-title-row h2 {
     font-family: var(--font-display);
-    font-size: 0.9rem;
+    font-size: var(--ds-fs-ui);
     font-weight: 700;
     letter-spacing: 0.12em;
     margin: 0;
@@ -744,7 +593,7 @@ body {
 .modal-voice-name {
     margin-top: 0.4rem;
     font-family: var(--font-mono);
-    font-size: 1.05rem;
+    font-size: var(--ds-fs-h3);
     color: var(--text-primary);
     letter-spacing: 0.06em;
 }
@@ -774,7 +623,7 @@ body {
     gap: 0.75rem;
     padding: 2rem;
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: var(--ds-fs-ui);
 }
 
 .modal-error {
@@ -792,19 +641,19 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--ds-hairline);
     border: 1px solid var(--border-card);
     border-radius: 8px;
     transition: border-color 0.2s;
 }
 
 .modal-file-item:hover {
-    border-color: rgba(0, 245, 212, 0.3);
+    border-color: var(--ds-signal-line);
 }
 
 .modal-file-index {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: var(--ds-fs-cap);
     color: var(--text-muted);
     min-width: 1.8rem;
     text-align: right;
@@ -819,21 +668,21 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
+    font-size: var(--ds-fs-ui);
     color: var(--text-primary);
 }
 
 .modal-file-name i {
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: var(--ds-fs-ui);
     flex-shrink: 0;
 }
 
 .modal-pos-pill {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
-    background: rgba(0, 245, 212, 0.1);
-    border: 1px solid rgba(0, 245, 212, 0.3);
+    font-size: var(--ds-fs-cap);
+    background: var(--ds-signal-fill);
+    border: 1px solid var(--ds-signal-line);
     color: var(--accent-teal);
     padding: 0.1rem 0.4rem;
     border-radius: 4px;
@@ -842,7 +691,7 @@ body {
 }
 
 .modal-file-path {
-    font-size: 0.75rem;
+    font-size: var(--ds-fs-cap);
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -869,7 +718,7 @@ body {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.85rem;
+    font-size: var(--ds-fs-ui);
 }
 
 .btn-reveal:hover {
@@ -883,7 +732,7 @@ body {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    background-color: hsl(225, 25%, 10%);
+    background-color: var(--ds-surface);
     border: 1px solid var(--accent-teal);
     color: var(--text-primary);
     padding: 1rem 1.5rem;
@@ -905,7 +754,7 @@ body {
 
 #toast-icon {
     color: var(--accent-teal);
-    font-size: 1.25rem;
+    font-size: var(--ds-fs-icon);
 }
 
 /* Responsive fixes */
@@ -914,25 +763,8 @@ body {
         padding: 1rem 0.5rem;
     }
     
-    .app-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .lcd-panel {
-        width: 100%;
-    }
-    
-    .input-with-button {
-        flex-direction: column;
-    }
-    
     .btn {
         width: 100%;
-    }
-    
-    .deck-actions {
-        justify-content: stretch;
     }
     
     .voices-table th, .voices-table td {
@@ -940,7 +772,7 @@ body {
     }
 
     .tab-btn {
-        font-size: 0.7rem;
+        font-size: var(--ds-fs-micro);
         padding: 0.55rem 0.9rem;
         letter-spacing: 0.05em;
     }
@@ -982,7 +814,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     font-family: var(--font-display);
-    font-size: 0.8rem;
+    font-size: var(--ds-fs-sm);
     font-weight: 700;
     letter-spacing: 0.1em;
     padding: 0.65rem 1.4rem;
@@ -999,12 +831,12 @@ body {
 }
 
 .tab-btn i {
-    font-size: 0.85rem;
+    font-size: var(--ds-fs-ui);
 }
 
 .tab-btn:hover:not(.active) {
     color: var(--text-secondary);
-    background: hsla(172, 100%, 45%, 0.04);
+    background: var(--ds-signal-wash);
     border-color: var(--border-card);
 }
 
@@ -1057,7 +889,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0.65rem 1rem;
-    background: hsla(225, 20%, 4%, 0.6);
+    background: var(--ds-scrim-soft);
     border-bottom: 1px solid var(--border-card);
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -1068,13 +900,13 @@ body {
     align-items: center;
     gap: 0.4rem;
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: var(--ds-fs-sm);
     color: var(--accent-teal);
 }
 
 .dup-file-count-label {
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: var(--ds-fs-cap);
     color: var(--text-muted);
     display: inline-flex;
     align-items: center;
@@ -1090,7 +922,7 @@ body {
     display: flex;
     justify-content: flex-end;
     padding: 0.75rem 1rem;
-    background: hsla(225, 20%, 4%, 0.4);
+    background: var(--ds-scrim-soft);
     border-top: 1px solid var(--border-card);
 }
 
@@ -1114,12 +946,12 @@ body {
 
 .dup-row-keep {
     border-left-color: var(--accent-teal);
-    background: hsla(172, 100%, 45%, 0.04);
+    background: var(--ds-signal-wash);
 }
 
 .dup-row-will-delete {
     border-left-color: var(--accent-red);
-    background: hsla(352, 75%, 52%, 0.03);
+    background: var(--ds-danger-fill);
     opacity: 0.65;
 }
 
@@ -1157,7 +989,7 @@ body {
 }
 
 .dup-radio-indicator i {
-    font-size: 0.65rem;
+    font-size: var(--ds-fs-micro);
     color: transparent;
     transition: color var(--transition-speed);
 }
@@ -1177,7 +1009,7 @@ body {
 
 .dup-keep-label {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--ds-fs-micro);
     font-weight: 700;
     letter-spacing: 0.08em;
     min-width: 2.2rem;
@@ -1204,7 +1036,7 @@ body {
 
 .dup-folder-path {
     font-family: var(--font-mono);
-    font-size: 0.85rem;
+    font-size: var(--ds-fs-ui);
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -1217,7 +1049,7 @@ body {
 }
 
 .dup-folder-meta {
-    font-size: 0.72rem;
+    font-size: var(--ds-fs-cap);
     color: var(--text-muted);
     font-family: var(--font-mono);
 }
@@ -1247,7 +1079,7 @@ body {
     padding: 0.45rem 0.6rem;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: var(--ds-fs-ui);
     transition: all var(--transition-speed);
     flex-shrink: 0;
 }
@@ -1256,7 +1088,7 @@ body {
 .btn-icon.active {
     border-color: var(--accent-teal);
     color: var(--accent-teal);
-    background: hsla(172, 100%, 45%, 0.08);
+    background: var(--ds-signal-fill-soft);
 }
 
 /* Type filter pill tabs */
@@ -1279,26 +1111,26 @@ body {
     background: transparent;
     color: var(--text-muted);
     font-family: var(--font-display);
-    font-size: 0.62rem;
+    font-size: var(--ds-fs-micro);
     letter-spacing: 0.06em;
     cursor: pointer;
     transition: all var(--transition-speed);
 }
 
 .type-tab i {
-    font-size: 0.6rem;
+    font-size: var(--ds-fs-micro);
 }
 
 .type-tab:hover {
     border-color: var(--accent-teal);
     color: var(--accent-teal);
-    background: hsla(172, 100%, 45%, 0.06);
+    background: var(--ds-signal-fill-soft);
 }
 
 .type-tab.active {
     background: var(--accent-teal);
     border-color: var(--accent-teal);
-    color: hsl(225, 20%, 6%);
+    color: var(--ds-bg);
     box-shadow: 0 0 8px var(--accent-teal-glow);
 }
 
@@ -1346,7 +1178,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     font-family: var(--font-display);
-    font-size: 0.62rem;
+    font-size: var(--ds-fs-micro);
     letter-spacing: 0.1em;
     color: var(--text-muted);
     padding: 0.2rem 0.5rem 0.6rem;
@@ -1356,7 +1188,7 @@ body {
 
 .tree-header i {
     color: var(--accent-teal);
-    font-size: 0.75rem;
+    font-size: var(--ds-fs-cap);
 }
 
 .folder-tree {
@@ -1372,7 +1204,7 @@ body {
     cursor: pointer;
     border-radius: 4px;
     border-left: 2px solid transparent;
-    font-size: 0.78rem;
+    font-size: var(--ds-fs-cap);
     font-family: var(--font-mono);
     color: var(--text-secondary);
     user-select: none;
@@ -1384,19 +1216,19 @@ body {
 }
 
 .tree-node:hover {
-    background: hsla(172, 100%, 45%, 0.06);
+    background: var(--ds-signal-fill-soft);
     color: var(--text-primary);
 }
 
 .tree-node.selected {
-    background: hsla(172, 100%, 45%, 0.12);
+    background: var(--ds-signal-ring);
     color: var(--accent-teal);
     border-left-color: var(--accent-teal);
 }
 
 .tree-node-root {
     font-family: var(--font-display);
-    font-size: 0.65rem;
+    font-size: var(--ds-fs-micro);
     letter-spacing: 0.06em;
     color: var(--text-muted);
     margin-bottom: 0.1rem;
@@ -1420,7 +1252,7 @@ body {
 }
 
 .tree-chevron {
-    font-size: 0.55rem;
+    font-size: var(--ds-fs-micro);
     color: var(--text-muted);
     transition: transform 0.15s ease, color 0.15s;
 }
@@ -1434,7 +1266,7 @@ body {
 }
 
 .tree-folder-icon {
-    font-size: 0.78rem;
+    font-size: var(--ds-fs-cap);
     color: var(--text-muted);
     flex-shrink: 0;
     transition: color var(--transition-speed);
@@ -1474,7 +1306,7 @@ body {
     align-items: center;
     gap: 0.3rem;
     font-family: var(--font-display);
-    font-size: 0.52rem;
+    font-size: var(--ds-fs-micro);
     letter-spacing: 0.05em;
     padding: 0.15rem 0.45rem;
     border-radius: 4px;
@@ -1482,25 +1314,25 @@ body {
 }
 
 .type-badge i {
-    font-size: 0.5rem;
+    font-size: var(--ds-fs-micro);
 }
 
 .type-badge-voice {
-    background: hsla(172, 100%, 45%, 0.1);
+    background: var(--ds-signal-fill);
     color: var(--accent-teal);
-    border: 1px solid hsla(172, 100%, 45%, 0.3);
+    border: 1px solid var(--ds-signal-line);
 }
 
 .type-badge-perf {
-    background: hsla(270, 60%, 60%, 0.12);
-    color: hsl(270, 60%, 72%);
-    border: 1px solid hsla(270, 60%, 60%, 0.3);
+    background: var(--ds-perf-fill);
+    color: var(--ds-perf);
+    border: 1px solid var(--ds-perf-line);
 }
 
 .type-badge-gen2 {
-    background: hsla(35, 90%, 55%, 0.12);
-    color: hsl(35, 90%, 67%);
-    border: 1px solid hsla(35, 90%, 55%, 0.3);
+    background: var(--ds-gen2-fill);
+    color: var(--ds-gen2);
+    border: 1px solid var(--ds-gen2-line);
 }
 
 /* -----------------------------------------------------------------------
@@ -1528,7 +1360,7 @@ body {
     }
 
     .type-tab {
-        font-size: 0.58rem;
+        font-size: var(--ds-fs-micro);
         padding: 0.2rem 0.55rem;
     }
 }
@@ -1566,10 +1398,10 @@ body {
     justify-content: center;
     font-family: var(--ds-font-mono);
     font-weight: 700;
-    font-size: 14px;
+    font-size: var(--ds-fs-ui);
 }
 .brand-name {
-    font-size: 15px;
+    font-size: var(--ds-fs-ui);
     font-weight: 600;
     letter-spacing: 0.02em;
     line-height: 1.1;
@@ -1577,7 +1409,7 @@ body {
 }
 .brand-sub {
     font-family: var(--ds-font-mono);
-    font-size: 11px;
+    font-size: var(--ds-fs-micro);
     letter-spacing: 0.06em;
     color: var(--ds-text-4);
 }
@@ -1595,7 +1427,7 @@ body {
     padding-top: 0.6rem;
     padding-bottom: 0.6rem;
     font-family: var(--ds-font-mono);
-    font-size: 13px;
+    font-size: var(--ds-fs-sm);
 }
 .scan-command .btn {
     padding: 0.6rem 1.1rem;
@@ -1613,7 +1445,7 @@ body {
     align-items: center;
     gap: 8px;
     font-family: var(--ds-font-mono);
-    font-size: 12px;
+    font-size: var(--ds-fs-cap);
     letter-spacing: 0.06em;
     color: var(--ds-text-3);
 }
@@ -1629,13 +1461,13 @@ body {
 #lcd-status.status-scanning { color: var(--ds-warning); animation: pulse 1s infinite alternate; }
 .status-count {
     font-family: var(--ds-font-mono);
-    font-size: 11px;
+    font-size: var(--ds-fs-micro);
     letter-spacing: 0.06em;
     color: var(--ds-text-4);
     white-space: nowrap;
 }
 .status-count strong {
-    font-size: 16px;
+    font-size: var(--ds-fs-body);
     font-weight: 600;
     color: var(--ds-text);
     margin-right: 3px;
@@ -1658,7 +1490,7 @@ body {
 /* --- Results table: name leads, metadata recedes --- */
 .voices-table th {
     font-family: var(--ds-font-mono);
-    font-size: 11px;
+    font-size: var(--ds-fs-micro);
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1667,22 +1499,25 @@ body {
     border-bottom: 1px solid var(--ds-border);
     padding: 0.75rem 1rem;
 }
-.voices-table th:hover { color: var(--ds-signal); }
+/* Only the four headers with data-sort are interactive; the rest must not
+   advertise themselves with a pointer cursor and a hover colour. */
+.voices-table th[data-sort] { cursor: pointer; }
+.voices-table th[data-sort]:hover { color: var(--ds-signal); }
 .voices-table td {
     padding: 0.8rem 1rem;
-    border-bottom: 1px solid #15191d;
+    border-bottom: 1px solid var(--ds-border-subtle);
 }
-.voices-table tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.015); }
+.voices-table tbody tr:nth-child(even) { background: var(--ds-hairline-soft); }
 .voices-table tbody tr:hover { background: var(--ds-elevated-2); }
 .td-name {
     font-family: var(--ds-font-ui);
     font-weight: 600;
-    font-size: 14px;
+    font-size: var(--ds-fs-ui);
     letter-spacing: 0.01em;
 }
 .col-file, .file-wrapper, .col-path { font-family: var(--ds-font-mono); }
-.col-file { font-size: 12.5px; color: var(--ds-text-2); }
-.col-path { font-size: 11.5px; }
+.col-file { font-size: var(--ds-fs-cap); color: var(--ds-text-2); }
+.col-path { font-size: var(--ds-fs-micro); }
 .pos-pill { background: var(--ds-elevated); }
 .table-scroll-wrapper { border-radius: var(--ds-r-card); }
 
@@ -1707,25 +1542,25 @@ body {
     border-bottom: 1px solid var(--ds-border);
     padding: 0.7rem 1rem;
 }
-.dup-group-badge { font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-signal); }
-.dup-file-count-label { font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-4); }
+.dup-group-badge { font-family: var(--ds-font-mono); font-size: var(--ds-fs-cap); color: var(--ds-signal); }
+.dup-file-count-label { font-family: var(--ds-font-mono); font-size: var(--ds-fs-micro); color: var(--ds-text-4); }
 .dup-group-footer { background: var(--ds-sunken); border-top: 1px solid var(--ds-border); }
 
-.dup-folder-row { padding: 0.8rem 1rem; border-bottom: 1px solid #15191d; }
+.dup-folder-row { padding: 0.8rem 1rem; border-bottom: 1px solid var(--ds-border-subtle); }
 .dup-row-keep { background: var(--ds-signal-fill); border-left-color: var(--ds-signal); }
 .dup-row-will-delete { background: var(--ds-danger-fill); border-left-color: var(--ds-danger); }
 .dup-radio-indicator { border-color: var(--ds-border-2); }
 .dup-row-keep .dup-radio-indicator { border-color: var(--ds-signal); background: var(--ds-signal-fill); }
 .dup-row-keep .dup-radio-indicator i { color: var(--ds-signal); }
-.dup-keep-label { font-family: var(--ds-font-mono); font-size: 11px; }
+.dup-keep-label { font-family: var(--ds-font-mono); font-size: var(--ds-fs-micro); }
 .dup-row-keep .dup-keep-label { color: var(--ds-signal); }
 .dup-row-will-delete .dup-keep-label { color: var(--ds-danger); }
-.dup-folder-path { font-family: var(--ds-font-mono); font-size: 13px; color: var(--ds-text-2); }
+.dup-folder-path { font-family: var(--ds-font-mono); font-size: var(--ds-fs-sm); color: var(--ds-text-2); }
 .dup-row-keep .dup-folder-path { color: var(--ds-text); }
-.dup-folder-meta { font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-4); }
+.dup-folder-meta { font-family: var(--ds-font-mono); font-size: var(--ds-fs-micro); color: var(--ds-text-4); }
 
 /* --- Duplicate-files modal --- */
-.modal-overlay { background: rgba(0, 0, 0, 0.7); }
+.modal-overlay { background: var(--ds-backdrop); }
 .modal-panel {
     background: var(--ds-surface);
     border: 1px solid var(--ds-border);
@@ -1769,21 +1604,36 @@ body {
     border: 1px solid var(--ds-border);
     border-radius: var(--ds-r-card);
     box-shadow: var(--ds-shadow-lg);
-    font-size: 14px;
+    font-size: var(--ds-fs-ui);
 }
-#toast-icon { font-size: 1.1rem; }
+#toast-icon { font-size: var(--ds-fs-h3); }
 
 /* --- Empty & loading states --- */
-.empty-state h3 { font-family: var(--ds-font-ui); font-size: 17px; font-weight: 600; color: var(--ds-text); }
-.empty-state p { font-size: 13.5px; color: var(--ds-text-4); }
+.empty-state h3 { font-family: var(--ds-font-ui); font-size: var(--ds-fs-h3); font-weight: 600; color: var(--ds-text); }
+.empty-state p { font-size: var(--ds-fs-sm); color: var(--ds-text-4); }
 .empty-icon { color: var(--ds-text-4); opacity: 0.45; }
-.loading-state p { font-family: var(--ds-font-mono); font-size: 12.5px; color: var(--ds-text-4); }
+.loading-state p { font-family: var(--ds-font-mono); font-size: var(--ds-fs-cap); color: var(--ds-text-4); }
 .retro-loader { border-color: var(--ds-border-2); border-top-color: var(--ds-signal); }
 
-/* --- Keyboard focus (light a11y; full pass is the next step) --- */
+/* --- Keyboard focus --- */
+/* Covers the custom controls too: the folder tree uses div[role="button"] and
+   the sortable column headers use th[tabindex], neither of which matches
+   button/a/[role=tab]. Without these, keyboard users tab through the whole
+   tree and header row with no visible indication of where focus is. */
 button:focus-visible,
 a:focus-visible,
-[role="tab"]:focus-visible {
+[role="tab"]:focus-visible,
+[role="button"]:focus-visible,
+th[tabindex]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 2px solid var(--ds-signal);
+    outline-offset: 2px;
+}
+
+/* The radio itself is visually hidden, so the focus ring has to be drawn on
+   its indicator. This is the destructive folder-deletion screen -- a keyboard
+   user must be able to see which folder is currently marked KEEP. */
+.dup-radio-label input[type="radio"]:focus-visible + .dup-radio-indicator {
     outline: 2px solid var(--ds-signal);
     outline-offset: 2px;
 }
@@ -1844,7 +1694,7 @@ a:focus-visible,
     justify-content: center;
     font-family: var(--ds-font-mono);
     font-weight: 700;
-    font-size: 13px;
+    font-size: var(--ds-fs-sm);
     flex-shrink: 0;
 }
 
@@ -1887,7 +1737,7 @@ a:focus-visible,
     align-items: center;
     justify-content: center;
     font-family: var(--ds-font-mono);
-    font-size: 9.5px;
+    font-size: var(--ds-fs-micro);
     font-weight: 600;
     background: var(--ds-elevated);
     border: 1px solid var(--ds-border-2);
@@ -1914,7 +1764,7 @@ a:focus-visible,
 
 .vd-stat-label {
     font-family: var(--ds-font-mono);
-    font-size: 9px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-4);
     letter-spacing: 0.1em;
     margin-bottom: 3px;
@@ -1970,7 +1820,7 @@ a:focus-visible,
 .vd-defaults-tag {
     margin-left: auto;
     font-family: var(--ds-font-mono);
-    font-size: 10px;
+    font-size: var(--ds-fs-micro);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ds-text-4);
@@ -2015,7 +1865,7 @@ a:focus-visible,
     align-items: center;
     gap: 7px;
     font-family: var(--ds-font-ui);
-    font-size: 14.5px;
+    font-size: var(--ds-fs-ui);
     font-weight: 600;
     color: var(--ds-text);
 }
@@ -2033,13 +1883,13 @@ a:focus-visible,
 }
 
 .vd-fb-icon {
-    font-size: 9px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-signal);
 }
 
 .op-role-tag {
     font-family: var(--ds-font-mono);
-    font-size: 9px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-4);
     letter-spacing: 0.08em;
 }
@@ -2060,7 +1910,7 @@ a:focus-visible,
     display: flex;
     justify-content: space-between;
     font-family: var(--ds-font-mono);
-    font-size: 9.5px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-4);
     letter-spacing: 0.06em;
     margin-bottom: 5px;
@@ -2088,7 +1938,7 @@ a:focus-visible,
     grid-template-columns: auto 1fr;
     gap: 4px var(--ds-3);
     font-family: var(--ds-font-mono);
-    font-size: 11px;
+    font-size: var(--ds-fs-micro);
 }
 
 .op-eg-label {
@@ -2108,7 +1958,7 @@ a:focus-visible,
     flex-direction: column;
     gap: 5px;
     font-family: var(--ds-font-mono);
-    font-size: 10.5px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-3);
 }
 
@@ -2138,7 +1988,7 @@ a:focus-visible,
     gap: var(--ds-2);
     margin-bottom: var(--ds-4);
     font-family: var(--ds-font-ui);
-    font-size: 14px;
+    font-size: var(--ds-fs-ui);
     font-weight: 600;
     color: var(--ds-text);
 }
@@ -2146,7 +1996,7 @@ a:focus-visible,
 .vd-card-tag {
     margin-left: auto;
     font-family: var(--ds-font-mono);
-    font-size: 10.5px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-4);
 }
 
@@ -2189,7 +2039,7 @@ a:focus-visible,
     flex-wrap: wrap;
     gap: var(--ds-2) var(--ds-5);
     font-family: var(--ds-font-mono);
-    font-size: 11.5px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-4);
 }
 
@@ -2207,7 +2057,7 @@ a:focus-visible,
 .vd-controller-table th {
     text-align: right;
     font-family: var(--ds-font-mono);
-    font-size: 10px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-4);
     letter-spacing: 0.06em;
     padding: 5px 6px;
@@ -2234,7 +2084,7 @@ a:focus-visible,
 .vd-footnote {
     margin-top: var(--ds-3);
     font-family: var(--ds-font-mono);
-    font-size: 11px;
+    font-size: var(--ds-fs-micro);
     color: var(--ds-text-4);
 }
 

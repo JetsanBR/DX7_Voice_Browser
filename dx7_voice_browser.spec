@@ -28,41 +28,29 @@ datas = [
     (str(ROOT / "sample_patches"), "sample_patches"),  # demo data, copied out on first run
 ]
 
-# pywebview loads its native/managed interop assemblies out of webview/lib by
-# filename at runtime. They are not importable modules, so PyInstaller's module
-# graph cannot discover them.
-import webview  # noqa: E402
-
-_webview_lib = Path(webview.__file__).parent / "lib"
-if _webview_lib.is_dir():
-    datas.append((str(_webview_lib), "webview/lib"))
+# NOTE: webview/lib (the WebView2 interop assemblies) and webview/js are NOT
+# listed here. pywebview ships its own PyInstaller hook via the `pyinstaller40`
+# entry point, and pyinstaller-hooks-contrib carries an identical one; both are
+# auto-discovered regardless of hookspath, and adding them by hand here only
+# duplicated what the hooks already collect.
 
 # ---------------------------------------------------------------------------
 # Hidden imports: everything resolved by *string* at runtime rather than by an
 # import statement, so the module graph never sees it.
 # ---------------------------------------------------------------------------
+# Only the ones the toolchain cannot work out for itself. uvicorn's submodules
+# and anyio's backends are already covered by pyinstaller-hooks-contrib
+# (hook-uvicorn.py does collect_submodules('uvicorn'), hook-anyio.py does
+# collect_submodules('anyio._backends')), so listing them here was redundant.
 hiddenimports = [
-    # uvicorn resolves these through importlib in uvicorn/importer.py, using the
-    # names in its config tables. main.py pins loop/http/ws/lifespan explicitly,
-    # but the "auto" shims are included so a bare `uvicorn app:app` would also
-    # work inside the bundle.
-    "uvicorn.loops.auto",
-    "uvicorn.loops.asyncio",
-    "uvicorn.protocols.http.auto",
-    "uvicorn.protocols.http.h11_impl",
-    "uvicorn.protocols.websockets.auto",
-    "uvicorn.lifespan.on",
-    "uvicorn.lifespan.off",
-    "uvicorn.logging",
-    # anyio picks its backend by string; Starlette's threadpool needs it, which
-    # is what every sync endpoint in app.py runs on.
-    "anyio._backends._asyncio",
-    # pywebview picks its platform module by string.
+    # pywebview picks its platform module by string at runtime -- main.py passes
+    # gui="edgechromium" -- so the module graph cannot see these.
     "webview.platforms.winforms",
     "webview.platforms.edgechromium",
-    # pythonnet, the bridge WinForms is reached through.
+    # Naming clr explicitly is what makes hooks-contrib's hook-clr.py fire, and
+    # that hook is what locates Python.Runtime.dll. Without it pythonnet dies at
+    # startup and the window never appears.
     "clr",
-    "clr_loader",
 ]
 
 # ---------------------------------------------------------------------------
@@ -76,6 +64,12 @@ excludes = [
     # NB: do not exclude "distutils". Since Python 3.12 it is no longer stdlib
     # and is injected by setuptools' _distutils_hack, so excluding it makes
     # PyInstaller fail with "already imported as ExcludedModule".
+    #
+    # setuptools itself IS excluded: nothing in the app imports it, and
+    # _distutils_hack drags in ~130 modules (over 10% of the bundled Python
+    # source). Exclude the three together -- excluding setuptools while
+    # _distutils_hack is still live is exactly the failure noted above.
+    "setuptools", "_distutils_hack", "pkg_resources",
     "pip",
     "numpy", "PIL", "matplotlib", "pandas", "scipy",
     "uvloop", "httptools", "watchfiles", "websockets", "wsproto",
@@ -94,7 +88,13 @@ a = Analysis(  # noqa: F821
     runtime_hooks=[],
     excludes=excludes,
     noarchive=False,
-    optimize=0,  # keep docstrings: pydantic reads annotations at import time
+    # optimize=0 is the default, kept explicit because it matters here: -O
+    # strips `assert` statements, and h11/anyio/starlette use asserts as
+    # internal state-machine invariants, which turns loud failures into silent
+    # corruption. (-OO would additionally strip the docstrings FastAPI reads for
+    # OpenAPI.) Annotations are unaffected by either, so pydantic is not the
+    # reason.
+    optimize=0,
 )
 
 pyz = PYZ(a.pure)  # noqa: F821

@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import parser
 import voice_params
@@ -172,7 +173,7 @@ def test_extract_voice_blocks_matches_parse_syx_file():
     data.append(0x00)  # dummy checksum
     data.append(0xF7)
 
-    temp_file = "test_extract_blocks.syx"
+    temp_file = os.path.join(tempfile.gettempdir(), "test_extract_blocks.syx")
     with open(temp_file, "wb") as f:
         f.write(bytes(data))
 

@@ -49,11 +49,20 @@ tokens: [`static/tokens.css`](static/tokens.css); agent guardrails:
 | Spacing | 4 / 8 / 12 / 16 / 24 / 32 / 48 / 72 |
 | Radius | 6 ctrl · 10 card · 14 panel · 999 pill |
 
-### Fonts (replace the old Inter/Orbitron/Share Tech Mono `<link>`)
+### Fonts (vendored — do not add a CDN `<link>`)
+
+Space Grotesk and JetBrains Mono are served from `static/vendor/fonts/`, not from
+Google Fonts. The packaged desktop app must work with no network, and a CDN
+`<link>` silently degrades to fallback fonts (and, for Font Awesome, to blank
+icons) for anyone offline.
 
 ```html
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
+<link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
 ```
+
+Regenerate with `toolsetch_vendor.ps1`; see
+[`static/vendor/README.md`](static/vendor/README.md).
 
 > `static/tokens.css` must load **before** `static/style.css`. It also aliases
 > the legacy variable names, so loading it re-skins the app immediately; migrate
@@ -67,9 +76,10 @@ tokens: [`static/tokens.css`](static/tokens.css); agent guardrails:
 | Backend | Python 3, [FastAPI](https://fastapi.tiangolo.com/) |
 | Database | SQLite 3 (via Python's built-in `sqlite3` module) |
 | Frontend | Vanilla HTML5 / CSS3 / JavaScript (ES2020, no framework) |
-| Fonts | Google Fonts — Space Grotesk, JetBrains Mono |
-| Icons | Font Awesome 6 |
+| Fonts | Space Grotesk, JetBrains Mono — vendored locally in `static/vendor/` |
+| Icons | Font Awesome Free 6.4.0 — vendored locally in `static/vendor/` |
 | ASGI Server | Uvicorn (required to run FastAPI) |
+| Desktop shell | pywebview (WebView2) + PyInstaller, for the portable `.exe` |
 
 ---
 
@@ -206,14 +216,42 @@ pip install --only-binary=pythonnet,cffi -r requirements-dev.txt
 pyinstaller --noconfirm --clean dx7_voice_browser.spec   # -> dist\DX7VoiceBrowser.exe
 ```
 
-Produces a single ~19 MB executable. If a build misbehaves, build the console
-variant first — the windowed one has no stdout, so failures there are silent:
+Produces a single ~19 MB executable in `dist\`. **That is the one you ship.**
+
+#### The two build variants
+
+The spec builds either a windowed or a console executable from the same code and
+the same bundled assets, chosen by the `DX7_BUILD_CONSOLE` environment variable
+(`console=CONSOLE` in `dx7_voice_browser.spec`). The only real difference is the
+Windows PE subsystem:
+
+| | `dist\` (default) | `dist-console\` |
+| --- | --- | --- |
+| PE subsystem | GUI (2) | Console (3) |
+| Console window | none | a terminal opens alongside the app |
+| `sys.stdout` / `sys.stderr` | **`None`** | real streams |
+| Use it for | shipping | debugging |
 
 ```powershell
 $env:DX7_BUILD_CONSOLE = "1"
 pyinstaller --noconfirm --clean --distpath dist-console dx7_voice_browser.spec
 Remove-Item Env:\DX7_BUILD_CONSOLE
 ```
+
+**Build the console variant first whenever something is wrong.** In the windowed
+build `sys.stdout` and `sys.stderr` are `None`, so a crash before the window
+opens produces nothing at all — no message, no window, no output; the app simply
+fails to start. The console variant shows the traceback and pywebview's own
+startup lines (`[pywebview] Using WinForms / Chromium … loaded event fired`),
+which is usually enough to identify a missing hidden import or data file.
+
+Never ship the console build: users would see a stray terminal window next to the
+app and assume it is broken.
+
+For problems reported by users, start with the log file instead —
+`%LOCALAPPDATA%\DX7VoiceBrowser\dx7browser.log` records the same startup detail.
+The windowed build is not blind, it just cannot use stdout; `main.py` passes
+`log_config=None` to uvicorn precisely so it does not try to.
 
 `tools\fetch_vendor.ps1` regenerates the offline copies of Font Awesome and the
 two fonts in `static\vendor\`; `tools\make_icon.py` regenerates `assets\dx7.ico`.
@@ -236,7 +274,7 @@ build needs no network.
 10. **View voice parameters** — Click the (i) icon next to a Voice or Gen 2 Extended row (or a duplicate-files modal entry) to open the full-page **Voice Parameters** view — every operator, envelope, LFO, and (for Gen 2 Extended patches) key mode / pitch bend / portamento / controller setting. Not shown for Performance rows, since a performance isn't a single voice. Click **BACK** to return to whichever tab you were on.
 11. **Clear Database** — Removes all entries. The next scan starts fresh.
 12. **Cleanup tab** — Click the **CLEANUP** tab to switch to the duplicate folder cleanup view. No rescan is needed — the analysis works from whatever is already in the database.
-13. **Find duplicate folders** — Click **FIND DUPLICATES** to analyze the database and identify folders with identical `.syx` content (same filenames and same voices at the same positions).
+13. **Find duplicate folders** — Click **FIND DUPLICATES** to identify folders whose `.syx` files are **byte-for-byte identical**. Files are read from disk and hashed (SHA-256), so an edited copy of a bank is *not* treated as a duplicate of the original even when every patch name matches.
 14. **Choose which folder to keep** — Each duplicate group shows all matching folders. Select the one to keep using the radio button; the others are marked DEL.
 15. **Delete duplicates** — Click **DELETE UNSELECTED** on a group to permanently delete the unselected folder(s) and all their contents from disk. A confirmation dialog lists exactly what will be removed. This action is irreversible.
 
@@ -833,7 +871,7 @@ Expected output: 96 voices across 3 banks at varying directory depths.
 - The `bank_index` field returned by `parser.parse_syx_file()` is **not stored** in the database (only `position` within a bank is stored). If multiple banks exist in one file, patches from all banks are flattened with positions 1–32 repeated per bank.
 - Search results are **capped at 200 rows** (`database.RESULT_LIMIT`). Column sorting applies only to the returned page, not the full dataset. Increase the constant if a higher browse limit is needed.
 - **Folder deletion is irreversible** — the Cleanup tab uses `shutil.rmtree`, which permanently removes the entire directory and all its contents. There is no recycle bin or undo.
-- Duplicate folder detection is based solely on **data in the current database**. If files have been added, moved, or deleted on disk since the last scan, re-scan before running Cleanup to get accurate results.
+- Duplicate folder detection reads and hashes the `.syx` files **on disk**, using the database only to know which folders to look at. Folders that no longer exist, or whose files cannot be read, are skipped rather than being reported as duplicates. A folder added since the last scan will not be considered until you re-scan.
 - **AMEM has no patch names** — The AMEM format carries no name data. When a VMEM bank is bundled in the same file (the common DX7S/DX7II case), names are taken from the paired VMEM slots after merging. If an AMEM bank arrives without a paired VMEM, synthetic names `Ext Voice 01`–`Ext Voice 32` are kept.
 - **`DX7_ALGORITHMS` (in `voice_params.py`) needs verification** — the carrier/
   modulator/feedback-operator table used to color the Voice Parameters page's

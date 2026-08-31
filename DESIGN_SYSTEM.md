@@ -78,11 +78,12 @@ All values are tokens in `tokens.css`. Reference tokens, never raw hex.
 
 ## 3. Typography
 
-Two families only. Load via Google Fonts (already in `index.html`; swap the
-`<link>` from Inter/Orbitron/Share Tech Mono to the two below):
+Two families only, **vendored locally** in `static/vendor/fonts/` (weights
+400/500/600/700, latin subset). Do not load them from Google Fonts: the app ships
+as a packaged desktop executable that must render correctly with no network.
 
 ```html
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
 ```
 
 - **Space Grotesk** (`--ds-font-ui`) — display + all UI. Weights 400/500/600/700.
